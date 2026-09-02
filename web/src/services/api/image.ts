@@ -1,4 +1,5 @@
 import axios from "axios";
+import apiClient from "./client";
 
 import i18n from "@/i18n";
 import { buildApiUrl, resolveModelRequestConfig, resolveModelScript, withLocalProxy, type AiConfig, type ModelChannel } from "@/stores/use-config-store";
@@ -8,6 +9,8 @@ import { dataUrlToFile } from "@/lib/image-utils";
 import { buildImageReferencePromptText } from "@/lib/image-reference-prompt";
 import { imageToDataUrl } from "@/services/image-storage";
 import type { ReferenceImage } from "@/types/image";
+import { useUserStore } from "@/stores/use-user-store";
+import { getAvailableModels, proxyGenerateImage, proxyEditImage, proxyChatCompletion, type ProxyChatMessage } from "./ai-proxy";
 
 const apiText = (key: string, options?: Record<string, unknown>) => i18n.t(`apiErrors.${key}`, options);
 
@@ -234,8 +237,9 @@ function supportsGeminiImageSize(model: string) {
 }
 
 function resolveImageSource(item: Record<string, unknown>) {
-    if (typeof item.b64_json === "string" && item.b64_json) {
-        return `data:image/png;base64,${item.b64_json}`;
+    const b64 = item.b64_json || item.b64 || item.base64 || item.image;
+    if (typeof b64 === "string" && b64) {
+        return b64.startsWith("data:") ? b64 : `data:image/png;base64,${b64}`;
     }
     if (typeof item.url === "string" && item.url) {
         return item.url;
@@ -736,6 +740,24 @@ export async function requestGeneration(config: AiConfig, prompt: string, option
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
+    if (useUserStore.getState().token) {
+        const quality = normalizeQuality(config.quality);
+        const requestSize = resolveRequestSize(quality, config.size);
+        const background = normalizeBackground(config.background);
+        try {
+            return await proxyGenerateImage({
+                prompt: withSystemPrompt(requestConfig, prompt),
+                model: requestConfig.model,
+                size: requestSize,
+                quality,
+                n,
+                background,
+                signal: options?.signal,
+            });
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("requestFailed")));
+        }
+    }
     if (requestConfig.apiFormat === "gemini") {
         try {
             return await requestGeminiImages(requestConfig, prompt, [], n, options);
@@ -763,6 +785,7 @@ export async function requestGeneration(config: AiConfig, prompt: string, option
             {
                 headers: aiHeaders(requestConfig, "application/json"),
                 signal: options?.signal,
+                timeout: 300000,
             },
         );
         const images = await parseImagePayload(response.data);
@@ -793,6 +816,26 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
                 signal: options?.signal,
             });
             return normalizePluginImages(result).map((dataUrl) => ({ id: nanoid(), dataUrl }));
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("requestFailed")));
+        }
+    }
+    if (useUserStore.getState().token) {
+        const quality = normalizeQuality(config.quality);
+        const requestSize = resolveRequestSize(quality, config.size);
+        const background = normalizeBackground(config.background);
+        const primaryRef = references[0] ? await imageToDataUrl(references[0]) : "";
+        try {
+            return await proxyEditImage({
+                prompt: withSystemPrompt(requestConfig, requestPrompt),
+                image: primaryRef,
+                model: requestConfig.model,
+                size: requestSize,
+                quality,
+                n,
+                background,
+                signal: options?.signal,
+            });
         } catch (error) {
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
@@ -831,7 +874,7 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
     files.forEach((file) => formData.append(imageField, file));
 
     try {
-        const response = await axios.post<ImageApiResponse>(aiApiUrl(requestConfig, "/images/edits"), formData, { headers: aiHeaders(requestConfig), signal: options?.signal });
+        const response = await axios.post<ImageApiResponse>(aiApiUrl(requestConfig, "/images/edits"), formData, { headers: aiHeaders(requestConfig), signal: options?.signal, timeout: 300000 });
         const images = await parseImagePayload(response.data);
         return images;
     } catch (error) {
@@ -859,6 +902,22 @@ export async function requestImageQuestion(config: AiConfig, messages: AiTextMes
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
+    if (useUserStore.getState().token) {
+        try {
+            const fullMessages = withSystemMessage(requestConfig, messages) as ProxyChatMessage[];
+            const answer = await proxyChatCompletion(
+                fullMessages,
+                (delta, text) => onDelta(text),
+                options?.signal,
+                requestConfig.model,
+            );
+            const text = String(answer ?? "").trim() || apiText("noContent");
+            if (text === apiText("noContent")) onDelta(text);
+            return text;
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("requestFailed")));
+        }
+    }
     try {
         if (requestConfig.apiFormat === "gemini") {
             const answer = (await requestGeminiStreamingResponse(requestConfig, toGeminiBody(requestConfig, messages), onDelta, options)).content || apiText("noContent");
@@ -878,27 +937,50 @@ export async function requestImageQuestion(config: AiConfig, messages: AiTextMes
 }
 
 export async function fetchImageModels(config: Pick<AiConfig, "baseUrl" | "apiKey" | "apiFormat">) {
-    try {
-        if (config.apiFormat === "gemini") {
-            const response = await axios.get<GeminiPayload>(geminiApiUrl({ ...defaultGeminiConfig, ...config }), { headers: geminiHeaders({ ...defaultGeminiConfig, ...config }) });
-            validateGeminiPayload(response.data);
-            return (response.data.models || [])
-                .map((model) => model.name?.replace(/^models\//, ""))
+    if (config.baseUrl && (config.apiKey || config.apiFormat === "gemini")) {
+        try {
+            if (config.apiFormat === "gemini") {
+                const response = await axios.get<GeminiPayload>(geminiApiUrl({ ...defaultGeminiConfig, ...config }), { headers: geminiHeaders({ ...defaultGeminiConfig, ...config }) });
+                validateGeminiPayload(response.data);
+                return (response.data.models || [])
+                    .map((model) => model.name?.replace(/^models\//, ""))
+                    .filter((id): id is string => Boolean(id))
+                    .sort((a, b) => a.localeCompare(b));
+            }
+            // Use backend proxy for OpenAI-compatible channels to avoid CORS and handle fallbacks
+            if (useUserStore.getState().token) {
+                const res = await apiClient.post<{ allModels?: string[]; data?: any[]; imageModels?: string[] }>("/admin/ai-config/fetch-models", {
+                    baseUrl: config.baseUrl,
+                    apiKey: config.apiKey,
+                });
+                if (res.data?.allModels && res.data.allModels.length > 0) {
+                    return res.data.allModels;
+                }
+            }
+            const response = await axios.get<{ data?: Array<{ id?: string }>; error?: { message?: string } }>(buildApiUrl(config.baseUrl, "/models"), {
+                headers: {
+                    Authorization: `Bearer ${config.apiKey}`,
+                },
+            });
+            return (response.data.data || [])
+                .map((model) => model.id)
                 .filter((id): id is string => Boolean(id))
                 .sort((a, b) => a.localeCompare(b));
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("modelReadFailed")));
         }
-        const response = await axios.get<{ data?: Array<{ id?: string }>; error?: { message?: string } }>(buildApiUrl(config.baseUrl, "/models"), {
-            headers: {
-                Authorization: `Bearer ${config.apiKey}`,
-            },
-        });
-        return (response.data.data || [])
-            .map((model) => model.id)
-            .filter((id): id is string => Boolean(id))
-            .sort((a, b) => a.localeCompare(b));
-    } catch (error) {
-        throw new Error(readAxiosError(error, apiText("modelReadFailed")));
     }
+
+    if (useUserStore.getState().token) {
+        try {
+            const res = await getAvailableModels();
+            return res.imageModels;
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("modelReadFailed")));
+        }
+    }
+
+    return ["dall-e-3", "gpt-image-2"];
 }
 
 export async function fetchChannelModels(channel: ModelChannel) {

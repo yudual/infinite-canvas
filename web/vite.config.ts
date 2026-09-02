@@ -46,6 +46,21 @@ export default defineConfig({
             "@": resolve(webDir, "src"),
         },
     },
+    server: {
+        host: "0.0.0.0",
+        port: parseInt(process.env.VITE_PORT || process.env.WEB_PORT || "5173", 10),
+        proxy: {
+            "/api": {
+                target: process.env.BACKEND_URL || `http://127.0.0.1:${process.env.BACKEND_PORT || "3001"}`,
+                changeOrigin: true,
+                ws: true,
+            },
+            "/uploads": {
+                target: process.env.BACKEND_URL || `http://127.0.0.1:${process.env.BACKEND_PORT || "3001"}`,
+                changeOrigin: true,
+            },
+        },
+    },
     define: {
         __APP_VERSION__: JSON.stringify(localVersion),
         __APP_RELEASES__: JSON.stringify(parseChangelog(localChangelog)),

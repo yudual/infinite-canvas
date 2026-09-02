@@ -15,3 +15,14 @@ web/public/plugins
 plugins/canvas/*/dist
 plugins/canvas/*/node_modules
 web/public/plugins
+
+# Agent and temporary workspace artifacts
+.agents/
+.claude/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+uploads/
+server/data/
+server/uploads/
+server/dist/

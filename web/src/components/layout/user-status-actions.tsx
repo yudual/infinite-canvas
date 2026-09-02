@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { GitHubLink } from "@/components/layout/github-link";
 import { VersionReleaseModal } from "@/components/layout/version-release-modal";
+import { UserProfileDropdown } from "@/components/layout/user-profile-dropdown";
 import { DOCS_URL } from "@/constant/env";
 import { changeAppLocale, type AppLocale } from "@/i18n";
 import { cn } from "@/lib/utils";
@@ -18,9 +19,10 @@ type UserStatusActionsProps = {
     variant?: "default" | "canvas";
     onOpenShortcuts?: () => void;
     onOpenPlugins?: () => void;
+    onOpenProjects?: () => void;
 };
 
-export function UserStatusActions({ showConfig = true, variant = "default", onOpenShortcuts, onOpenPlugins }: UserStatusActionsProps) {
+export function UserStatusActions({ showConfig = true, variant = "default", onOpenShortcuts, onOpenPlugins, onOpenProjects }: UserStatusActionsProps) {
     const { i18n, t } = useTranslation();
     const theme = useThemeStore((state) => state.theme);
     const setTheme = useThemeStore((state) => state.setTheme);
@@ -63,6 +65,9 @@ export function UserStatusActions({ showConfig = true, variant = "default", onOp
                     <Keyboard className="size-4" />
                 </button>
             ) : null}
+            <div className="ml-1 pl-1 border-l border-stone-200 dark:border-stone-800">
+                <UserProfileDropdown onOpenProjects={onOpenProjects} />
+            </div>
         </div>
     );
 }
