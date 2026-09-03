@@ -34,6 +34,8 @@ export function ImageSettingsPanel({ config, onConfigChange, theme, showTitle = 
     const { t } = useTranslation();
     const [snapDimensionToStep, setSnapDimensionToStep] = useState(true);
     const quality = config.quality || "auto";
+    const currentModel = (config.model || config.imageModel || "").toLowerCase();
+    const isGrokModel = currentModel.includes("grok");
     const count = Math.max(1, Math.min(maxCount, Math.floor(Math.abs(Number(config.count)) || 1)));
     const activeSize = config.size || "auto";
     const transparentBackground = config.background === "transparent";
@@ -72,6 +74,11 @@ export function ImageSettingsPanel({ config, onConfigChange, theme, showTitle = 
                             </OptionPill>
                         ))}
                     </div>
+                    {isGrokModel && (
+                        <div className="rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
+                            💡 {t("settingsPanels.image.grokMediumHint", "Grok 2.0 官方最高支持 Medium 档位（2K 画质），暂不支持 High。")}
+                        </div>
+                    )}
                 </div>
                 <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-3">

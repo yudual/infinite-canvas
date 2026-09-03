@@ -1,11 +1,18 @@
 services:
   app:
-    image: ghcr.io/basketikun/infinite-canvas:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: infinite-canvas
-    ports:
-      - "3000:3000"
     restart: unless-stopped
-    # 统计分析（可选，默认关闭）。每家一个独立变量，填了谁就启用谁，可同时启用多家：
-    # environment:
-    #   ANALYTICS_GA4_ID: G-XXXXXXXXXX                    # Google Analytics 4 衡量 ID
-    #   ANALYTICS_BAIDU_ID: xxxxxxxxxxxxxxxxxxxxxxxxxxxx   # 百度统计站点 ID
+    ports:
+      - "8675:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATA_DIR=/app/data
+      - DB_PATH=/app/data/canvas.db
+      - UPLOADS_DIR=/app/data/uploads
+      - JWT_SECRET=canvas-production-jwt-secret-replace-in-env
+    volumes:
+      - ./data:/app/data
