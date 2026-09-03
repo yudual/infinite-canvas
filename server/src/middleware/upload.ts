@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import multer from "multer";
 import { UPLOADS_DIR } from "../config.js";
 
@@ -15,9 +16,8 @@ const storage = multer.diskStorage({
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase() || ".png";
-    const timestamp = Date.now();
-    const randomHex = Math.random().toString(36).substring(2, 10);
-    cb(null, `${timestamp}-${randomHex}${ext}`);
+    const uniqueId = crypto.randomBytes(16).toString("hex");
+    cb(null, `${uniqueId}${ext}`);
   },
 });
 

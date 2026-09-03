@@ -1,21 +1,30 @@
 import { useState } from "react";
-import { Tabs, Button } from "antd";
+import { Tabs, Button, theme, Typography } from "antd";
 import { Link } from "react-router-dom";
 import {
     LayoutDashboard,
     Users as UsersIcon,
-    Sparkles,
+    Cpu,
+    Image as ImageIcon,
+    FolderKanban,
+    FileText,
     ArrowLeft,
     ShieldCheck,
 } from "lucide-react";
 import { useAdminData } from "./hooks/use-admin-data";
 import { AdminOverviewCard } from "./components/admin-overview-card";
+import { AdminChannelsPanel } from "./components/admin-channels-panel";
 import { AdminUserTable } from "./components/admin-user-table";
-import { AdminAiConfigPanel } from "./components/admin-ai-config-panel";
+import { AdminAssetsPanel } from "./components/admin-assets-panel";
+import { AdminProjectsPanel } from "./components/admin-projects-panel";
+import { AdminAuditLogsPanel } from "./components/admin-audit-logs-panel";
 import { UserStatusActions } from "@/components/layout/user-status-actions";
 import { useUserStore } from "@/stores/use-user-store";
 
+const { Title, Paragraph } = Typography;
+
 export default function AdminPage() {
+    const { token } = theme.useToken();
     const currentUser = useUserStore((state) => state.user);
     const [activeTab, setActiveTab] = useState("overview");
 
@@ -38,16 +47,6 @@ export default function AdminPage() {
         handleToggleUserStatus,
         handleResetPassword,
         handleDeleteUser,
-
-        aiConfig,
-        aiConfigLoading,
-        aiConfigSaving,
-        aiTestLoading,
-        aiTestResult,
-        setAiTestResult,
-        loadAiConfig,
-        handleSaveAiConfig,
-        handleTestAiConfig,
     } = useAdminData();
 
     const tabItems = [
@@ -66,6 +65,16 @@ export default function AdminPage() {
                     onRefresh={loadStats}
                 />
             ),
+        },
+        {
+            key: "channels",
+            label: (
+                <span className="flex items-center gap-1.5">
+                    <Cpu className="size-4" />
+                    AI 模型渠道
+                </span>
+            ),
+            children: <AdminChannelsPanel />,
         },
         {
             key: "users",
@@ -102,32 +111,50 @@ export default function AdminPage() {
             ),
         },
         {
-            key: "ai-config",
+            key: "assets",
             label: (
                 <span className="flex items-center gap-1.5">
-                    <Sparkles className="size-4" />
-                    AI 模型配置
+                    <ImageIcon className="size-4" />
+                    素材库管理
                 </span>
             ),
-            children: (
-                <AdminAiConfigPanel
-                    aiConfig={aiConfig}
-                    loading={aiConfigLoading}
-                    saving={aiConfigSaving}
-                    testLoading={aiTestLoading}
-                    testResult={aiTestResult}
-                    onSave={handleSaveAiConfig}
-                    onTest={handleTestAiConfig}
-                    onClearTestResult={() => setAiTestResult(null)}
-                />
+            children: <AdminAssetsPanel />,
+        },
+        {
+            key: "projects",
+            label: (
+                <span className="flex items-center gap-1.5">
+                    <FolderKanban className="size-4" />
+                    云端工程
+                </span>
             ),
+            children: <AdminProjectsPanel />,
+        },
+        {
+            key: "audit-logs",
+            label: (
+                <span className="flex items-center gap-1.5">
+                    <FileText className="size-4" />
+                    调用审计日志
+                </span>
+            ),
+            children: <AdminAuditLogsPanel />,
         },
     ];
 
     return (
-        <div className="flex h-screen flex-col overflow-hidden bg-background text-stone-900 dark:text-stone-100">
+        <div
+            className="flex h-screen flex-col overflow-hidden"
+            style={{ backgroundColor: token.colorBgLayout, color: token.colorText }}
+        >
             {/* Top Navigation Bar */}
-            <header className="sticky top-0 z-20 h-14 shrink-0 border-b border-stone-200 bg-background/90 backdrop-blur-xl dark:border-stone-800">
+            <header
+                className="sticky top-0 z-20 h-14 shrink-0 border-b backdrop-blur-xl"
+                style={{
+                    backgroundColor: token.colorBgContainer,
+                    borderColor: token.colorBorderSecondary,
+                }}
+            >
                 <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <div
@@ -139,7 +166,13 @@ export default function AdminPage() {
                         />
                         <div className="flex items-center gap-2">
                             <span className="text-base font-semibold tracking-tight">Infinite Canvas</span>
-                            <span className="inline-flex items-center gap-1 rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                            <span
+                                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
+                                style={{
+                                    backgroundColor: token.colorPrimaryBg,
+                                    color: token.colorPrimaryText,
+                                }}
+                            >
                                 <ShieldCheck className="size-3.5" />
                                 管理控制台
                             </span>
@@ -158,16 +191,19 @@ export default function AdminPage() {
             </header>
 
             {/* Main Content Area */}
-            <main className="min-h-0 flex-1 overflow-y-auto bg-background bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] px-4 py-6 [background-size:16px_16px] sm:px-6 lg:px-8 dark:bg-[radial-gradient(rgba(245,245,244,.16)_1px,transparent_1px)]">
+            <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-7xl space-y-6">
-                    <div className="flex items-center justify-between border-b border-stone-200 pb-4 dark:border-stone-800">
+                    <div
+                        className="flex items-center justify-between border-b pb-4"
+                        style={{ borderColor: token.colorBorderSecondary }}
+                    >
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-stone-950 dark:text-stone-100">
+                            <Title level={3} className="!mb-0" style={{ color: token.colorTextHeading }}>
                                 系统后台管理
-                            </h1>
-                            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                                欢迎管理员 {currentUser?.displayName || currentUser?.username || "Admin"}，在此管理用户、AI 服务及查看系统运行状态。
-                            </p>
+                            </Title>
+                            <Paragraph type="secondary" className="!mb-0 mt-1 text-sm">
+                                欢迎管理员 {currentUser?.displayName || currentUser?.username || "Admin"}，在此管理模型渠道池、素材与工程运维、查看调用审计与系统状态。
+                            </Paragraph>
                         </div>
                     </div>
 
@@ -176,7 +212,6 @@ export default function AdminPage() {
                         onChange={setActiveTab}
                         items={tabItems}
                         size="large"
-                        className="admin-dashboard-tabs"
                     />
                 </div>
             </main>

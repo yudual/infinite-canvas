@@ -3,12 +3,22 @@ import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import { db, toSafeUser, getAiConfig, maskApiKey, updateAiConfig, type UserRecord } from "../db.js";
 import { authenticateToken, requireAdmin } from "../middleware/auth.js";
+import { channelsAdminRouter } from "./admin/channels.js";
+import { assetsAdminRouter } from "./admin/assets.js";
+import { projectsAdminRouter } from "./admin/projects.js";
+import { auditLogsAdminRouter } from "./admin/audit-logs.js";
 
 export const adminRouter = Router();
 
 // Protect all admin routes with JWT and Admin guard
 adminRouter.use(authenticateToken);
 adminRouter.use(requireAdmin);
+
+// Mount admin sub-routers
+adminRouter.use("/channels", channelsAdminRouter);
+adminRouter.use("/assets", assetsAdminRouter);
+adminRouter.use("/projects", projectsAdminRouter);
+adminRouter.use("/audit-logs", auditLogsAdminRouter);
 
 // ==========================================
 // 1. User Management Endpoints
@@ -257,7 +267,7 @@ adminRouter.put("/ai-config", (req: Request, res: Response) => {
 });
 
 // Helper function to categorize model IDs
-function categorizeModels(modelIds: string[]) {
+export function categorizeModels(modelIds: string[]) {
   const imageKeywords = ["dall-e", "flux", "stable-diffusion", "sd-", "sdxl", "sd3", "midjourney", "mj-", "recraft", "ideogram", "image", "kolors", "cogview", "imagen", "playground", "photomaker", "schnell", "dev", "pro"];
   const chatKeywords = ["gpt", "claude", "deepseek", "gemini", "qwen", "glm", "llama", "chat", "mistral", "yi-", "kimi", "moonshot", "baichuan", "gemma", "command-r"];
 

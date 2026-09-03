@@ -740,7 +740,14 @@ export async function requestGeneration(config: AiConfig, prompt: string, option
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
-    if (useUserStore.getState().token) {
+    if (requestConfig.apiFormat === "gemini") {
+        try {
+            return await requestGeminiImages(requestConfig, prompt, [], n, options);
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("requestFailed")));
+        }
+    }
+    if (useUserStore.getState().token && (!requestConfig.apiKey || requestConfig.baseUrl === "/api/ai")) {
         const quality = normalizeQuality(config.quality);
         const requestSize = resolveRequestSize(quality, config.size);
         const background = normalizeBackground(config.background);
@@ -754,13 +761,6 @@ export async function requestGeneration(config: AiConfig, prompt: string, option
                 background,
                 signal: options?.signal,
             });
-        } catch (error) {
-            throw new Error(readAxiosError(error, apiText("requestFailed")));
-        }
-    }
-    if (requestConfig.apiFormat === "gemini") {
-        try {
-            return await requestGeminiImages(requestConfig, prompt, [], n, options);
         } catch (error) {
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
@@ -820,7 +820,14 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
-    if (useUserStore.getState().token) {
+    if (requestConfig.apiFormat === "gemini") {
+        try {
+            return await requestGeminiImages(requestConfig, requestPrompt, references, n, options);
+        } catch (error) {
+            throw new Error(readAxiosError(error, apiText("requestFailed")));
+        }
+    }
+    if (useUserStore.getState().token && (!requestConfig.apiKey || requestConfig.baseUrl === "/api/ai")) {
         const quality = normalizeQuality(config.quality);
         const requestSize = resolveRequestSize(quality, config.size);
         const background = normalizeBackground(config.background);
@@ -836,13 +843,6 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
                 background,
                 signal: options?.signal,
             });
-        } catch (error) {
-            throw new Error(readAxiosError(error, apiText("requestFailed")));
-        }
-    }
-    if (requestConfig.apiFormat === "gemini") {
-        try {
-            return await requestGeminiImages(requestConfig, requestPrompt, references, n, options);
         } catch (error) {
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
@@ -949,7 +949,7 @@ export async function fetchImageModels(config: Pick<AiConfig, "baseUrl" | "apiKe
             }
             // Use backend proxy for OpenAI-compatible channels to avoid CORS and handle fallbacks
             if (useUserStore.getState().token) {
-                const res = await apiClient.post<{ allModels?: string[]; data?: any[]; imageModels?: string[] }>("/admin/ai-config/fetch-models", {
+                const res = await apiClient.post<{ allModels?: string[]; data?: any[]; imageModels?: string[] }>("/ai/models/probe", {
                     baseUrl: config.baseUrl,
                     apiKey: config.apiKey,
                 });

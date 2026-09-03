@@ -186,11 +186,10 @@ export function AdminUserTable({
         <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-1 items-center gap-2 sm:max-w-md">
-                    <Input
-                        prefix={<Search className="size-4 text-stone-400" />}
+                    <Input.Search
                         placeholder="搜索用户名或昵称..."
-                        value={search}
-                        onChange={(e) => onSearch(e.target.value)}
+                        defaultValue={search}
+                        onSearch={(val) => onSearch(val)}
                         allowClear
                     />
                     <Button

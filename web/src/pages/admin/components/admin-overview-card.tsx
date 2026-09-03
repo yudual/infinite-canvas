@@ -1,20 +1,13 @@
 import { Card, Button, Spin, Statistic } from "antd";
 import { Users, UserCheck, FolderKanban, Image as ImageIcon, HardDrive, RotateCw } from "lucide-react";
 import type { SystemStats } from "@/services/api/admin";
+import { formatBytes } from "@/lib/image-utils";
 
 type AdminOverviewCardProps = {
     stats: SystemStats | null;
     loading: boolean;
     onRefresh: () => void;
 };
-
-function formatBytes(bytes?: number): string {
-    if (!bytes || bytes <= 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-}
 
 export function AdminOverviewCard({ stats, loading, onRefresh }: AdminOverviewCardProps) {
     const cards = [
@@ -74,14 +67,14 @@ export function AdminOverviewCard({ stats, loading, onRefresh }: AdminOverviewCa
             ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     {cards.map((card, idx) => (
-                        <Card key={idx} className="border border-stone-200/80 shadow-xs dark:border-stone-800" size="small">
+                        <Card key={idx} size="small">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-stone-500 dark:text-stone-400">{card.title}</span>
+                                <span className="text-xs font-medium text-stone-500">{card.title}</span>
                                 {card.icon}
                             </div>
                             <div className="mt-3">
                                 {card.isCustomValue ? (
-                                    <div className="text-2xl font-bold tracking-tight text-stone-950 dark:text-stone-100">
+                                    <div className="text-2xl font-bold tracking-tight">
                                         {card.value}
                                     </div>
                                 ) : (

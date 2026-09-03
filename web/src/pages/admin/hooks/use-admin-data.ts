@@ -7,16 +7,9 @@ import {
     updateAdminUserStatus,
     resetAdminUserPassword,
     deleteAdminUser,
-    getAdminAiConfig,
-    updateAdminAiConfig,
-    testAdminAiConfig,
     type SystemStats,
     type AdminUserItem,
-    type AiConfig,
     type CreateUserPayload,
-    type UpdateAiConfigPayload,
-    type TestAiConfigPayload,
-    type TestAiConfigResponse,
 } from "@/services/api/admin";
 
 export function useAdminData() {
@@ -34,13 +27,6 @@ export function useAdminData() {
     const [limit, setLimit] = useState(10);
     const [search, setSearch] = useState("");
 
-    // AI Config State
-    const [aiConfig, setAiConfig] = useState<AiConfig | null>(null);
-    const [aiConfigLoading, setAiConfigLoading] = useState(false);
-    const [aiConfigSaving, setAiConfigSaving] = useState(false);
-    const [aiTestLoading, setAiTestLoading] = useState(false);
-    const [aiTestResult, setAiTestResult] = useState<TestAiConfigResponse | null>(null);
-
     // Fetch Stats
     const loadStats = useCallback(async () => {
         try {
@@ -56,7 +42,7 @@ export function useAdminData() {
     }, [message]);
 
     // Fetch Users
-    const loadUsers = useCallback(async (targetPage = page, targetLimit = limit, targetSearch = search) => {
+    const loadUsers = useCallback(async (targetPage = 1, targetLimit = 10, targetSearch = "") => {
         try {
             setUsersLoading(true);
             const data = await getAdminUsers({
@@ -71,20 +57,6 @@ export function useAdminData() {
             message.error(msg);
         } finally {
             setUsersLoading(false);
-        }
-    }, [page, limit, search, message]);
-
-    // Fetch AI Config
-    const loadAiConfig = useCallback(async () => {
-        try {
-            setAiConfigLoading(true);
-            const data = await getAdminAiConfig();
-            setAiConfig(data);
-        } catch (error: any) {
-            const msg = error.response?.data?.message || error.message || "获取 AI 模型配置失败";
-            message.error(msg);
-        } finally {
-            setAiConfigLoading(false);
         }
     }, [message]);
 
@@ -145,50 +117,10 @@ export function useAdminData() {
         }
     };
 
-    const handleSaveAiConfig = async (payload: UpdateAiConfigPayload): Promise<boolean> => {
-        try {
-            setAiConfigSaving(true);
-            await updateAdminAiConfig(payload);
-            message.success("AI 模型配置保存成功");
-            await loadAiConfig();
-            return true;
-        } catch (error: any) {
-            const msg = error.response?.data?.message || error.response?.data?.error?.message || error.message || "保存 AI 配置失败";
-            message.error(msg);
-            return false;
-        } finally {
-            setAiConfigSaving(false);
-        }
-    };
-
-    const handleTestAiConfig = async (payload: TestAiConfigPayload): Promise<TestAiConfigResponse | null> => {
-        try {
-            setAiTestLoading(true);
-            setAiTestResult(null);
-            const res = await testAdminAiConfig(payload);
-            setAiTestResult(res);
-            if (res.success) {
-                message.success(`连通性测试通过${res.latencyMs !== undefined ? ` (耗时 ${res.latencyMs}ms)` : ""}`);
-            } else {
-                message.error(`连通性测试失败: ${res.message || "接口未响应"}`);
-            }
-            return res;
-        } catch (error: any) {
-            const msg = error.response?.data?.message || error.response?.data?.error?.message || error.message || "连通性测试请求失败";
-            const failResult = { success: false, message: msg };
-            setAiTestResult(failResult);
-            message.error(msg);
-            return failResult;
-        } finally {
-            setAiTestLoading(false);
-        }
-    };
-
     useEffect(() => {
         void loadStats();
-        void loadUsers(1, limit, "");
-        void loadAiConfig();
-    }, [loadStats, loadUsers, loadAiConfig, limit]);
+        void loadUsers(1, 10, "");
+    }, [loadStats, loadUsers]);
 
     return {
         // Stats
@@ -211,16 +143,5 @@ export function useAdminData() {
         handleToggleUserStatus,
         handleResetPassword,
         handleDeleteUser,
-
-        // AI Config
-        aiConfig,
-        aiConfigLoading,
-        aiConfigSaving,
-        aiTestLoading,
-        aiTestResult,
-        setAiTestResult,
-        loadAiConfig,
-        handleSaveAiConfig,
-        handleTestAiConfig,
     };
 }

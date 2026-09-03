@@ -1,179 +1,193 @@
-# Project: Infinite Canvas Full-Stack Enhancement
+# Project: Infinite Canvas Full-Stack Enhancement & Multi-Channel Admin Upgrade
 
 ## Architecture
-A full-stack infinite canvas creative platform with a lightweight Node.js/TypeScript Express backend, SQLite local database (`better-sqlite3`), JWT authentication, first-time setup wizard, Ant Design-based admin dashboard, secure server-side AI proxy, cloud canvas project & asset persistence, and seamless React/Vite frontend integration.
+A full-stack infinite canvas creative platform with a Node.js/TypeScript Express backend, SQLite local database (`better-sqlite3` / `bun:sqlite`), JWT authentication, Ant Design 6 admin dashboard, intelligent multi-channel AI provider pool with automated failover routing, asset and cloud project console, AI request audit logs, and clean token-based design system.
 
 ```
-+-------------------------------------------------------------------------------+
-|                               Browser Client                                  |
-|         (React 19 + Vite 7 + React Router 7 + Ant Design 6 + Zustand 5)       |
-|                                                                               |
-|  - Setup Wizard (/setup)          - Admin Dashboard (/admin)                  |
-|  - Login (/login)                 - Canvas Workspace (/canvas/:id)            |
-|  - User Profile Dropdown          - Cloud Project Switcher / Saver            |
-+-------------------------------------------------------------------------------+
-                                      |
-                 HTTP REST / SSE      | Bearer JWT (Vite dev proxy / Single port)
-                                      v
-+-------------------------------------------------------------------------------+
-|                     Express Backend Service (Node.js / TS)                    |
-|                                                                               |
-|  +--------------------+  +--------------------+  +-------------------------+  |
-|  | /api/setup & /auth |  |     /api/admin     |  |         /api/ai         |  |
-|  |  - First admin init|  |  - Users CRUD      |  |  - Server key injection |  |
-|  |  - JWT Login/Me    |  |  - AI settings     |  |  - Image generation     |  |
-|  |  - Password hash   |  |  - System stats    |  |  - Chat/Agent SSE proxy |  |
-|  +--------------------+  +--------------------+  +-------------------------+  |
-|  +--------------------+  +-------------------------------------------------+  |
-|  |   /api/projects    |  |          /api/assets & /uploads (Static)        |  |
-|  |  - Cloud JSON CRUD |  |  - Multer upload, MIME check, disk storage      |  |
-|  +--------------------+  +-------------------------------------------------+  |
-+-------------------------------------------------------------------------------+
-           |                                                      |
-           v                                                      v
-+-----------------------------+                         +-------------------+
-|  SQLite DB (data/canvas.db) |                         |  Upstream OpenAI  |
-|  users, settings, projects  |                         |  Compatible API   |
-+-----------------------------+                         +-------------------+
++---------------------------------------------------------------------------------------------------+
+|                                          Browser Client                                           |
+|                  (React 19 + Vite 7 + React Router 7 + Ant Design 6 + Zustand 5)                  |
+|                                                                                                   |
+|  - Setup Wizard (/setup)                                    - Login (/login)                      |
+|  - Canvas Workspace (/canvas/:id)                           - User Profile Dropdown               |
+|  - Admin Dashboard (/admin):                                                                      |
+|    * System Overview (Metrics Grid, Quick Actions)                                                |
+|    * Multi-Channel Model Pool (Channel Table, Modals, Model Tag Editor, Upstream Model Discovery)   |
+|    * Asset Management Console (Thumbnail Previews, Size Sort, Disk Storage Stats, Batch Delete)   |
+|    * Project Management Console (Owner Query, Canvas Size, Recovery Reset, Delete)                |
+|    * AI Request Audit Logs (Status Badges, Latency Tags, Failover Traces, JSON Detail Drawer)     |
+|    * User Management (CRUD, Status Toggle, Password Reset)                                        |
++---------------------------------------------------------------------------------------------------+
+                                                  |
+                             HTTP REST / SSE      | Bearer JWT (Vite dev proxy / Single port)
+                                                  v
++---------------------------------------------------------------------------------------------------+
+|                               Express Backend Service (Node.js / TS)                              |
+|                                                                                                   |
+|  +-----------------------+  +------------------------------------------------------------------+  |
+|  |   /api/setup & auth   |  |                   /api/admin (Protected Admin)                   |  |
+|  | - First admin init    |  | - /users: User CRUD, status, password reset                      |  |
+|  | - JWT Login/Me        |  | - /channels: Multi-provider CRUD, priority, health probe, sync   |  |
+|  | - bcrypt hashing      |  | - /assets: Multi-user query, disk space stats, batch unlink      |  |
+|  +-----------------------+  | - /projects: User project query, canvas reset, delete            |  |
+|                             | - /audit-logs: Multi-dimensional log query & payload details     |  |
+|                             | - /stats: Comprehensive system metrics                           |  |
+|                             +------------------------------------------------------------------+  |
+|  +---------------------------------------------------------------------------------------------+  |
+|  |                     /api/ai (Secure AI Proxy with Intelligent Router)                       |  |
+|  | - Dynamic Candidate Channel Matching by Requested Model & Priority                          |  |
+|  | - Automated Failover Loop on HTTP 429 / 5xx / Network Timeouts (Alternate Channels)        |  |
+|  | - Zero Key Leak Isolation & Sanitized Request/Response Logging                              |  |
+|  +---------------------------------------------------------------------------------------------+  |
+|  +------------------------------------------------------+  +-----------------------------------+  |
+|  |                    /api/projects                     |  |       /api/assets & /uploads      |  |
+|  | - User Cloud Canvas CRUD                             |  | - Multer upload, MIME validation  |  |
+|  | - Node graph & state persistence                     |  | - Physical disk storage (/uploads)|  |
+|  +------------------------------------------------------+  +-----------------------------------+  |
++---------------------------------------------------------------------------------------------------+
+                  |                                                    |
+                  v                                                    v
++--------------------------------------+             +----------------------------------------------+
+|       SQLite DB (data/canvas.db)     |             |       Upstream Multi-Provider AI Pool        |
+| - users, system_settings, projects   |             | - Channel A: OpenAI (gpt-4o, dall-e-3)       |
+| - assets (with disk paths & sizes)   |             | - Channel B: SiliconFlow (flux, deepseek)    |
+| - ai_channels (priority, health)     |             | - Channel C: DeepSeek / Custom Providers     |
+| - ai_audit_logs (traces & latencies) |             +----------------------------------------------+
++--------------------------------------+
 ```
 
 ## Feature Inventory
 | # | Feature ID | Feature Name | Description | Milestone | Source |
 |---|------------|--------------|-------------|-----------|--------|
-| 1 | FEAT-AUTH-01 | Setup Status Check | Check if system has initial admin registered | M1 | survey |
-| 2 | FEAT-AUTH-02 | First-Time Admin Setup | Create initial super admin and initialize system | M1 | survey |
-| 3 | FEAT-AUTH-03 | User Login | Authenticate user with username/password, issue JWT | M1 | survey |
-| 4 | FEAT-AUTH-04 | Current Session Profile | Get logged-in user profile & verify token | M1 | survey |
-| 5 | FEAT-AUTH-05 | User Logout | Invalidate client session and redirect to login | M1 | survey |
-| 6 | FEAT-AUTH-06 | Frontend Route Guards | Protect canvas, admin, setup, and auth routes | M1 | survey |
-| 7 | FEAT-UI-01 | Login & Setup Pages | React UI for `/login` and `/setup` | M1 | survey |
-| 8 | FEAT-ADMIN-01 | Admin Dashboard Page | Dedicated Ant Design admin portal layout (`/admin`) | M2 | survey |
-| 9 | FEAT-ADMIN-02 | User List & Query | List all users with pagination and search | M2 | survey |
-| 10 | FEAT-ADMIN-03 | Admin Create User | Admin creates new user with role and password | M2 | survey |
-| 11 | FEAT-ADMIN-04 | Toggle User Status | Enable or disable user account | M2 | survey |
-| 12 | FEAT-ADMIN-05 | Reset User Password | Admin sets new password for target user | M2 | survey |
-| 13 | FEAT-ADMIN-06 | Delete User | Permanently remove user and cascade data | M2 | survey |
-| 14 | FEAT-ADMIN-07 | Get AI Config | Fetch system AI provider settings with masked key | M2 | survey |
-| 15 | FEAT-ADMIN-08 | Update AI Config | Save upstream Base URL, API Key, and model list | M2 | survey |
-| 16 | FEAT-ADMIN-09 | Test AI Connectivity | Test connection to upstream OpenAI-compatible API | M2 | survey |
-| 17 | FEAT-ADMIN-10 | System Stats Overview | Aggregated metrics for users, projects, assets | M2 | survey |
-| 18 | FEAT-PROXY-01 | Image Generation Proxy | Securely forward image generation requests upstream | M3 | survey |
-| 19 | FEAT-PROXY-02 | Image Edit Proxy | Securely forward inpainting/editing requests | M3 | survey |
-| 20 | FEAT-PROXY-03 | Chat & Agent Proxy | Securely forward chat/agent completions (SSE stream) | M3 | survey |
-| 21 | FEAT-PROXY-04 | Zero Key Leak Isolation | Prevent exposing admin API key to browser clients | M3 | survey |
-| 22 | FEAT-PROJ-01 | List User Projects | Retrieve all canvas projects belonging to user | M4 | survey |
-| 23 | FEAT-PROJ-02 | Create Project | Create new cloud canvas project record | M4 | survey |
-| 24 | FEAT-PROJ-03 | Load Project Detail | Retrieve full canvas node graph & state | M4 | survey |
-| 25 | FEAT-PROJ-04 | Update Project State | Save canvas node graph, connections, viewport | M4 | survey |
-| 26 | FEAT-PROJ-05 | Delete Project | Remove user canvas project | M4 | survey |
-| 27 | FEAT-ASSET-01 | Upload Asset File | Upload image/asset to `/uploads` on disk | M4 | survey |
-| 28 | FEAT-ASSET-02 | Static Asset Serving | Serve uploaded files via `/uploads/...` with MIME check | M4 | survey |
-| 29 | FEAT-ASSET-03 | List & Delete Assets | Manage user uploaded and generated assets | M4 | survey |
-| 30 | FEAT-UI-02 | Canvas Header Profile | Profile dropdown in `AppTopNav` & canvas header | M5 | survey |
-| 31 | FEAT-UI-03 | Cloud Sync Integration | Cloud project switcher/saver integrated into canvas | M5 | survey |
-| 32 | FEAT-UI-04 | AI Service Routing | Direct all generation tools to `/api/ai/*` proxy | M5 | survey |
-| 33 | FEAT-TEST-01 | E2E Test Suite | Automated end-to-end acceptance tests (Tiers 1-4) | E2E | survey |
-| 34 | FEAT-VERIF-01 | Acceptance & Hardening | 100% E2E verification + Tier 5 adversarial tests | M6 | survey |
+| 1 | FEAT-AUTH-01 | Setup Status Check | Check if system has initial admin registered | M0 (Done) | survey |
+| 2 | FEAT-AUTH-02 | First-Time Admin Setup | Create initial super admin and initialize system | M0 (Done) | survey |
+| 3 | FEAT-AUTH-03 | User Login | Authenticate user with username/password, issue JWT | M0 (Done) | survey |
+| 4 | FEAT-AUTH-04 | Current Session Profile | Get logged-in user profile & verify token | M0 (Done) | survey |
+| 5 | FEAT-AUTH-05 | User Logout | Invalidate client session and redirect to login | M0 (Done) | survey |
+| 6 | FEAT-AUTH-06 | Frontend Route Guards | Protect canvas, admin, setup, and auth routes | M0 (Done) | survey |
+| 7 | FEAT-CHAN-01 | AI Channels Schema & Migration | SQLite `ai_channels` schema, indexes, legacy auto-seeding | M1 | R1 |
+| 8 | FEAT-CHAN-02 | Channel CRUD REST API | List, get, create, update, delete, and toggle AI channels | M1 | R1 |
+| 9 | FEAT-CHAN-03 | Channel Health & Probe API | Health probe with latency measurement and error tracking | M1 | R1 |
+| 10 | FEAT-CHAN-04 | Upstream Model Sync API | Probe `/models` to auto-discover and categorize models | M1 | R1 |
+| 11 | FEAT-CHAN-05 | Intelligent AI Router Service | Match candidates by model, priority, health state | M1 | R1 |
+| 12 | FEAT-CHAN-06 | Auto-Failover & Retry Loop | Seamless retry across backup channels on 429/5xx/timeout | M1 | R1 |
+| 13 | FEAT-CHAN-07 | Proxy Route Integration | Wire `/api/ai/*` to use Intelligent Router | M1 | R1 |
+| 14 | FEAT-ASSET-01 | Admin Assets Query API | List all user assets with search, MIME filter, size sorting | M2 | R2 |
+| 15 | FEAT-ASSET-02 | Disk Space Statistics API | Disk space usage aggregation & orphan file detection | M2 | R2 |
+| 16 | FEAT-ASSET-03 | Physical Asset Deletion API | Single & atomic batch deletion with `fs.unlinkSync` & DB delete | M2 | R2 |
+| 17 | FEAT-PROJ-01 | Admin Projects Query API | List cloud projects across all users with data size | M2 | R2 |
+| 18 | FEAT-PROJ-02 | Corrupt Project Reset API | Reset invalid/corrupted `canvas_data` to clean graph | M2 | R2 |
+| 19 | FEAT-PROJ-03 | Admin Project Deletion API | Admin deletion of user projects | M2 | R2 |
+| 20 | FEAT-LOG-01 | AI Audit Logs Schema | SQLite `ai_audit_logs` table with performance indexes | M3 | R3 |
+| 21 | FEAT-LOG-02 | AI Interceptor & Logger | Intercept AI requests, record latency, channel, status | M3 | R3 |
+| 22 | FEAT-LOG-03 | Zero Base64 Bleed Sanitizer | Sanitize large base64 payloads and redact API credentials | M3 | R3 |
+| 23 | FEAT-LOG-04 | Admin Audit Logs Query API | Query logs with status, model, channel, date filtering | M3 | R3 |
+| 24 | FEAT-TOKEN-01 | Design Token Enhancement | Comprehensive Alias & Component tokens in `app-theme.ts` | M4 | R4 |
+| 25 | FEAT-UI-CHAN | Channel Pool Admin View | Modular ChannelTable, Modal, TagEditor, FetchModal | M4 | R1, R4 |
+| 26 | FEAT-UI-ASSET | Asset Console Admin View | Modular AssetTable, StatsCard, BatchModal, ImagePreview | M4 | R2, R4 |
+| 27 | FEAT-UI-PROJ | Project Console Admin View | Modular ProjectTable, ResetModal, ThumbnailPreview | M4 | R2, R4 |
+| 28 | FEAT-UI-LOG | Audit Logs Admin View | Modular AuditLogTable, FilterBar, DetailDrawer | M4 | R3, R4 |
+| 29 | FEAT-UI-CLEAN | AGENTS.md Cleanup & Split | Remove all 41 `dark:` classes, keep all files < 400 lines | M4 | R4 |
+| 30 | FEAT-TEST-ALL | Acceptance & Verification | Automated test suites for all features + adversarial hardening | M5 | Acceptance |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| E2E | E2E Testing Suite | Automated test runner, test harness, Tiers 1-4 test cases -> `TEST_READY.md` | none | DONE |
-| M1 | Setup Wizard & Auth System | Backend scaffolding, SQLite DB, `/api/setup/*`, `/api/auth/*`, bcrypt, JWT, `/setup`, `/login`, route guards | none | DONE |
-| M2 | Admin Management Dashboard | `/admin` UI, `/api/admin/users/*`, `/api/admin/settings/ai/*`, `/api/admin/stats` | M1 | DONE |
-| M3 | Secure AI Proxy | `/api/ai/models`, `/api/ai/images/*`, `/api/ai/chat/completions` (SSE), server key injection | M1, M2 | IN_PROGRESS |
-| M4 | Cloud Persistence & Assets | `/api/projects/*`, `/api/assets/*`, `/uploads/*` static serving | M1 | PLANNED |
-| M5 | Seamless Frontend Integration | Header user profile dropdown, cloud project saver/switcher, AI service routing, canvas regression check | M1, M2, M3, M4 | PLANNED |
-| M6 | Final Verification & Hardening | Pass 100% of E2E test suite (Tiers 1-4) + Tier 5 adversarial hardening | M5, E2E | PLANNED |
+| M1 | Multi-Channel AI Pool & Routing Backend | `ai_channels` DB schema, Channel CRUD/probe/sync APIs, `ai-router` with failover loop, proxy integration | none | DONE |
+| M2 | Asset & Project Console Backend | Admin Assets API with size sort & filters, disk space stats, single & batch `fs.unlinkSync` deletion, Admin Projects API with canvas data reset | none | DONE |
+| M3 | AI Request Audit Logging Backend | `ai_audit_logs` DB schema, asynchronous logging interceptor, payload sanitizer, `/api/admin/audit-logs` query API | M1 | PLANNED |
+| M4 | Ant Design System & Admin Frontend | `app-theme.ts` token expansion, modular views for Channels, Assets, Projects, Logs, clean all `dark:` classes, guarantee all files <400 lines | M1, M2, M3 | PLANNED |
+| M5 | E2E Acceptance & Adversarial Hardening | Comprehensive automated test suites across all new endpoints, multi-channel failover simulation, line-count & token audits | M4 | PLANNED |
 
 ## Interface Contracts
 
-### 1. Setup & Authentication
-- `GET /api/setup/status` -> `{ initialized: boolean, requiresSetup: boolean }`
-- `POST /api/setup` -> Body: `{ username, password, displayName? }` -> Response `201 Created`: `{ success: true, token: string, user: UserDto }` (or `403 ALREADY_INITIALIZED`)
-- `POST /api/auth/login` -> Body: `{ username, password }` -> Response `200 OK`: `{ token: string, user: UserDto }` (or `401 / 403 ACCOUNT_DISABLED`)
-- `GET /api/auth/me` -> Headers: `Authorization: Bearer <token>` -> Response `200 OK`: `{ user: UserDto }`
-- `POST /api/auth/logout` -> Response `200 OK`: `{ success: true }`
+### 1. AI Channel Management (`Authorization: Bearer <admin_token>`)
+- `GET /api/admin/channels` -> `{ success: true, channels: ChannelDto[], total: number }`
+- `GET /api/admin/channels/:id` -> `{ success: true, channel: ChannelDto }`
+- `POST /api/admin/channels` -> Body: `{ name, providerType, baseUrl, apiKey, models, defaultModel?, priority?, weight?, timeoutMs?, customHeaders? }` -> `201 Created`: `{ success: true, channel: ChannelDto }`
+- `PUT /api/admin/channels/:id` -> Body: `{ name, providerType, baseUrl, apiKey?, models, defaultModel?, priority?, weight?, timeoutMs?, customHeaders? }` -> `200 OK`: `{ success: true, channel: ChannelDto }`
+- `PATCH /api/admin/channels/:id/status` -> Body: `{ isActive: boolean }` -> `200 OK`: `{ success: true, isActive: boolean }`
+- `DELETE /api/admin/channels/:id` -> `200 OK`: `{ success: true, message: string }`
+- `POST /api/admin/channels/:id/test` -> `200 OK`: `{ success: boolean, latencyMs: number, healthStatus: string, message: string }`
+- `POST /api/admin/channels/:id/sync-models` -> `200 OK`: `{ success: boolean, total: number, imageModels: string[], chatModels: string[], allModels: string[] }`
 
-### 2. Admin Management (`Authorization: Bearer <admin_token>`)
-- `GET /api/admin/users?page=1&limit=50&search=` -> `{ users: UserListItem[], total: number }`
-- `POST /api/admin/users` -> Body: `{ username, password, role, displayName? }` -> `201 Created`: `{ user: UserListItem }`
-- `PATCH /api/admin/users/:id/status` -> Body: `{ status: "active" | "disabled" }` -> `200 OK`: `{ user: UserListItem }`
-- `POST /api/admin/users/:id/reset-password` -> Body: `{ newPassword: string }` -> `200 OK`: `{ success: true }`
-- `DELETE /api/admin/users/:id` -> `200 OK`: `{ success: true }`
-- `GET /api/admin/ai-config` -> `200 OK`: `{ baseUrl: string, apiKeyMasked: string, hasKey: boolean, imageModels: string[], defaultModel: string, chatModels: string[] }`
-- `PUT /api/admin/ai-config` -> Body: `{ baseUrl, apiKey?, imageModels, defaultModel, chatModels? }` -> `200 OK`: `{ success: true }`
-- `POST /api/admin/ai-config/test` -> Body: `{ baseUrl?, apiKey? }` -> `200 OK`: `{ success: boolean, latencyMs: number, message?: string }`
-- `GET /api/admin/stats` -> `200 OK`: `{ userCount: number, activeUserCount: number, projectCount: number, assetCount: number, storageBytes: number }`
+### 2. Admin Asset & Project Management (`Authorization: Bearer <admin_token>`)
+- `GET /api/admin/assets?page=1&limit=20&search=&userId=&mimeType=&sortBy=created_at&sortOrder=desc` -> `{ success: true, assets: AssetDto[], total: number, totalStorageBytes: number }`
+- `GET /api/admin/assets/stats` -> `{ success: true, totalCount: number, totalBytes: number, imageCount: number, orphanDiskCount: number, orphanDiskBytes: number }`
+- `DELETE /api/admin/assets/:id` -> `200 OK`: `{ success: true, message: string }` (removes DB record and physically unlinks file on disk)
+- `POST /api/admin/assets/batch-delete` -> Body: `{ ids: string[] }` -> `200 OK`: `{ success: true, deletedCount: number, freedBytes: number }`
+- `GET /api/admin/projects?page=1&limit=20&search=&userId=` -> `{ success: true, projects: AdminProjectDto[], total: number }`
+- `POST /api/admin/projects/:id/reset` -> `200 OK`: `{ success: true, message: string, project: AdminProjectDto }` (resets corrupted canvasData to clean empty graph)
+- `DELETE /api/admin/projects/:id` -> `200 OK`: `{ success: true, message: string }`
 
-### 3. Secure AI Proxy (`Authorization: Bearer <user_token>`)
-- `GET /api/ai/models` -> `200 OK`: `{ imageModels: string[], defaultImageModel: string, chatModels: string[] }`
-- `POST /api/ai/images/generations` -> Body: `{ prompt, model?, size?, quality?, n? }` -> `200 OK`: `{ created: number, data: [{ url?: string, b64_json?: string }] }`
-- `POST /api/ai/images/edits` -> FormData: `prompt, image, mask?, model?, size?` -> `200 OK`: `{ created: number, data: [...] }`
-- `POST /api/ai/chat/completions` -> Body: `{ messages, model, stream?: boolean }` -> `200 OK` JSON or `text/event-stream` chunks
+### 3. AI Audit Logging (`Authorization: Bearer <admin_token>`)
+- `GET /api/admin/audit-logs?page=1&limit=20&status=&requestType=&model=&channelId=&userId=&startDate=&endDate=` -> `{ success: true, logs: AuditLogDto[], total: number }`
+- `GET /api/admin/audit-logs/:id` -> `{ success: true, log: AuditLogDetailDto }`
 
-### 4. Cloud Projects & Assets (`Authorization: Bearer <user_token>`)
-- `GET /api/projects` -> `200 OK`: `{ projects: Array<{ id: string, name: string, thumbnail?: string, createdAt: string, updatedAt: string }> }`
-- `POST /api/projects` -> Body: `{ name: string, canvasData: object, thumbnail?: string }` -> `201 Created`: `{ project: ProjectDetailDto }`
-- `GET /api/projects/:id` -> `200 OK`: `{ project: ProjectDetailDto }`
-- `PUT /api/projects/:id` -> Body: `{ name?: string, canvasData?: object, thumbnail?: string }` -> `200 OK`: `{ project: ProjectDetailDto }`
-- `DELETE /api/projects/:id` -> `200 OK`: `{ success: true }`
-- `POST /api/upload` -> FormData: `file` -> `201 Created`: `{ id: string, url: string, filename: string, mimeType: string, sizeBytes: number }`
-- `GET /uploads/:filename` -> Static asset binary with correct `Content-Type`
+### 4. AI Proxy Execution (`Authorization: Bearer <user_token>`)
+- `POST /api/ai/images/generations` -> Dispatches via `aiRouter.routeRequest({ type: 'image_generation', ... })`. If primary channel returns 429/5xx/timeout, automatically fails over to candidate channel 2. Emits audit log.
+- `POST /api/ai/images/edits` -> Dispatches via `aiRouter.routeRequest({ type: 'image_edit', ... })`. Auto failover. Emits audit log.
+- `POST /api/ai/chat/completions` -> Dispatches via `aiRouter.routeRequest({ type: 'chat_completion', ... })`. Auto failover before SSE flush. Emits audit log.
 
 ## Code Layout
 ```
 /home/dual/Projects/canvas/
-├── package.json                          # Root workspace package.json (dev, build, start scripts)
-├── server/                               # Express + TypeScript backend
-│   ├── package.json
-│   ├── tsconfig.json
+├── server/
 │   └── src/
-│       ├── index.ts                      # Server entry & static route mounting
-│       ├── config.ts                     # Environment & runtime constants
-│       ├── db.ts                         # SQLite setup (data/canvas.db) & schema migrations
-│       ├── middleware/
-│       │   ├── auth.ts                   # JWT authentication & admin authorization
-│       │   ├── upload.ts                 # Multer disk storage & MIME validation
-│       │   └── error-handler.ts          # Standard JSON error responses
+│       ├── db.ts                                  # Database schema & migrations (ai_channels, ai_audit_logs, indexes)
+│       ├── services/
+│       │   ├── ai-router.ts                       # Intelligent channel selection & failover dispatching
+│       │   └── ai-audit.ts                        # Request audit logging & payload sanitization
 │       └── routes/
-│           ├── setup.ts                  # /api/setup endpoints
-│           ├── auth.ts                   # /api/auth endpoints
-│           ├── admin.ts                  # /api/admin endpoints
-│           ├── ai.ts                     # /api/ai secure proxy endpoints
-│           ├── projects.ts               # /api/projects endpoints
-│           └── assets.ts                 # /api/upload & /api/assets endpoints
-├── web/                                  # Vite + React 19 Frontend SPA
-│   ├── package.json
-│   ├── vite.config.ts                    # Configured with /api & /uploads proxy to backend
+│           ├── ai.ts                              # /api/ai endpoints powered by ai-router & ai-audit
+│           └── admin/                             # Modular admin routers (<400 lines each)
+│               ├── index.ts                       # Admin router aggregator
+│               ├── channels.ts                    # /api/admin/channels endpoints
+│               ├── assets.ts                      # /api/admin/assets endpoints (with fs.unlinkSync)
+│               ├── projects.ts                    # /api/admin/projects endpoints
+│               ├── audit-logs.ts                  # /api/admin/audit-logs endpoints
+│               ├── users.ts                       # /api/admin/users endpoints
+│               └── stats.ts                       # /api/admin/stats endpoints
+├── web/
 │   └── src/
-│       ├── router.tsx                    # Routes: /setup, /login, /admin, Canvas with guards
+│       ├── lib/app-theme.ts                       # Ant Design Theme Tokens (Alias & Component tokens)
 │       ├── services/api/
-│       │   ├── client.ts                 # Axios instance with Bearer JWT interceptor
-│       │   ├── auth.ts                   # Auth & setup API services
-│       │   ├── admin.ts                  # Admin dashboard API services
-│       │   ├── ai-proxy.ts               # Secure AI proxy API services
-│       │   └── cloud-projects.ts         # Cloud projects & asset upload services
-│       ├── stores/
-│       │   ├── use-user-store.ts         # User session & auth state store
-│       │   └── canvas/                   # Canvas state store
-│       ├── pages/
-│       │   ├── setup/                    # /setup First-time wizard page
-│       │   ├── login/                    # /login Authentication page
-│       │   └── admin/                    # /admin Ant Design management dashboard
-│       │       ├── index.tsx
-│       │       ├── components/           # AdminOverviewCard, AdminUserTable, AdminAiConfigPanel
-│       │       └── hooks/                # useAdminData
-│       └── components/
-│           ├── layout/
-│           │   ├── user-status-actions.tsx
-│           │   └── user-profile-dropdown.tsx  # User info, logout, admin link
-│           └── canvas/
-│               ├── canvas-top-bar.tsx
-│               └── cloud-project-modal.tsx    # Cloud project switcher / saver
-├── data/                                 # Persistent runtime data
-│   ├── canvas.db                         # SQLite database file
-│   └── uploads/                          # Local asset upload directory
-└── tests/                                # Test suites
-    └── e2e/                              # E2E test runner and test tiers
+│       │   ├── admin.ts                           # Re-exports domain admin clients
+│       │   ├── admin-channels.ts                  # Channel pool API calls
+│       │   ├── admin-assets.ts                    # Asset management API calls
+│       │   ├── admin-projects.ts                  # Project management API calls
+│       │   └── admin-logs.ts                      # Audit logs API calls
+│       └── pages/admin/                           # Modular admin dashboard views (<400 lines per file)
+│           ├── index.tsx                          # Admin page shell with tabs (token-driven)
+│           ├── overview/                          # System overview & stats grid
+│           ├── channels/                          # Multi-channel pool UI
+│           │   ├── index.tsx
+│           │   ├── components/channel-table.tsx
+│           │   ├── components/channel-modal.tsx
+│           │   ├── components/model-tag-editor.tsx
+│           │   ├── components/model-fetch-modal.tsx
+│           │   └── use-admin-channels.ts
+│           ├── assets/                            # Asset management console
+│           │   ├── index.tsx
+│           │   ├── components/asset-table.tsx
+│           │   ├── components/asset-stats-card.tsx
+│           │   ├── components/asset-batch-modal.tsx
+│           │   └── use-admin-assets.ts
+│           ├── projects/                          # Project management console
+│           │   ├── index.tsx
+│           │   ├── components/project-table.tsx
+│           │   ├── components/project-reset-modal.tsx
+│           │   └── use-admin-projects.ts
+│           ├── logs/                              # AI request audit logs console
+│           │   ├── index.tsx
+│           │   ├── components/audit-log-table.tsx
+│           │   ├── components/audit-log-filter-bar.tsx
+│           │   ├── components/audit-log-drawer.tsx
+│           │   └── use-admin-logs.ts
+│           └── users/                             # User management views
+│               ├── index.tsx
+│               ├── components/admin-user-table.tsx
+│               └── components/admin-user-modal.tsx
+└── tests/
+    └── e2e/                                       # End-to-end acceptance tests
 ```
