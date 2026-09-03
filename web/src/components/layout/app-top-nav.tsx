@@ -1,4 +1,4 @@
-import { Bot, Menu } from "lucide-react";
+import { Bell, Bot, Menu } from "lucide-react";
 import { Button, Tooltip } from "antd";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -10,12 +10,15 @@ import { UserStatusActions } from "@/components/layout/user-status-actions";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { useAgentStore } from "@/stores/use-agent-store";
+import { useNoticeStore } from "@/stores/use-notice-store";
 
 export function AppTopNav() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { pathname } = useLocation();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const autoConnectRef = useRef(false);
+    const openNotice = useNoticeStore((state) => state.openNotice);
+    const hasCheckedToday = useNoticeStore((state) => state.hasCheckedToday);
     const agentToken = useAgentStore((state) => state.token);
     const agentEnabled = useAgentStore((state) => state.enabled);
     const agentConnected = useAgentStore((state) => state.connected);
@@ -83,6 +86,23 @@ export function AppTopNav() {
                         </div>
 
                         <div className="my-auto flex h-9 min-w-0 items-center justify-end gap-2 justify-self-end whitespace-nowrap">
+                            <Tooltip title={i18n.language?.startsWith("zh") ? "系统公告" : "System Notice"}>
+                                <Button
+                                    type="text"
+                                    shape="circle"
+                                    className="!h-8 !w-8 !min-w-8"
+                                    icon={
+                                        <span className="relative inline-flex items-center justify-center">
+                                            <Bell className="size-4 text-stone-600 dark:text-stone-300" />
+                                            {!hasCheckedToday && (
+                                                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-amber-500 animate-pulse" />
+                                            )}
+                                        </span>
+                                    }
+                                    onClick={openNotice}
+                                    aria-label="系统公告"
+                                />
+                            </Tooltip>
                             <Tooltip title={t(panelOpen ? "topNav.closeAgent" : "topNav.openAgent")}>
                                 <Button type="text" shape="circle" className="!h-8 !w-8 !min-w-8" icon={<Bot className="size-4" />} onClick={togglePanel} aria-label={t(panelOpen ? "topNav.closeAgent" : "topNav.openAgent")} />
                             </Tooltip>
