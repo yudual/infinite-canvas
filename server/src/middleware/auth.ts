@@ -126,3 +126,26 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   }
   next();
 }
+
+export function optionalAuthenticateToken(req: Request, _res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next();
+  }
+
+  const token = authHeader.substring(7).trim();
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as JwtPayload;
+    const userId = decoded.userId || decoded.sub;
+
+    if (userId) {
+      const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(userId) as UserRecord | undefined;
+      if (user && user.status !== "disabled") {
+        req.user = toSafeUser(user);
+      }
+    }
+  } catch {}
+  next();
+}

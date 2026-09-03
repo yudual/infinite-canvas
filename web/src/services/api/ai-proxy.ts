@@ -2,11 +2,25 @@ import { nanoid } from "nanoid";
 import { apiClient } from "./client";
 import { useUserStore } from "@/stores/use-user-store";
 
+export interface ServerChannelDto {
+    id: string;
+    name: string;
+    providerType: "openai" | "gemini" | string;
+    models: string[];
+    defaultModel?: string;
+    priority?: number;
+    weight?: number;
+}
+
 export interface AvailableModelsResponse {
+    channels?: ServerChannelDto[];
     imageModels: string[];
+    videoModels?: string[];
+    audioModels?: string[];
+    chatModels?: string[];
+    allModels?: string[];
     defaultModel?: string;
     defaultImageModel?: string;
-    chatModels?: string[];
 }
 
 export interface ProxyGenerateImageParams {
@@ -84,12 +98,7 @@ function parseProxyImageData(data: ProxyImageItem[]): GeneratedImageResult[] {
  */
 export async function getAvailableModels(): Promise<AvailableModelsResponse> {
     const response = await apiClient.get<AvailableModelsResponse>("/ai/models");
-    return {
-        imageModels: response.data.imageModels || [],
-        defaultModel: response.data.defaultModel || response.data.defaultImageModel,
-        defaultImageModel: response.data.defaultImageModel || response.data.defaultModel,
-        chatModels: response.data.chatModels || [],
-    };
+    return response.data;
 }
 
 /**

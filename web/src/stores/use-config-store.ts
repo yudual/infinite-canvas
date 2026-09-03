@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 
 import i18n from "@/i18n";
 import { useUserStore } from "@/stores/use-user-store";
+import { getAvailableModels } from "@/services/api/ai-proxy";
 
 export type ApiCallFormat = "openai" | "gemini";
 export type ModelCapability = "image" | "video" | "text" | "audio";
@@ -145,15 +146,16 @@ type ConfigStore = {
     openConfigDialog: (shouldPromptContinue?: boolean, tab?: ConfigTabKey) => void;
     setConfigDialogOpen: (isOpen: boolean) => void;
     clearPromptContinue: () => void;
+    syncServerChannels: () => Promise<void>;
 };
 
-const VIDEO_KEYWORDS = ["video", "sora", "veo", "kling", "wan", "hailuo"];
+const VIDEO_KEYWORDS = ["video", "sora", "veo", "kling", "wan", "hailuo", "luma", "runway", "pika", "cogvideox", "minimax", "vidu"];
 
 export function boolConfig(value: string, fallback: boolean) {
     return value ? value === "true" : fallback;
 }
-const AUDIO_KEYWORDS = ["audio", "tts", "speech", "voice", "music", "sound"];
-const IMAGE_KEYWORDS = ["seedream", "gpt-image", "image", "dall-e", "dalle", "imagen", "flux", "sdxl", "stable-diffusion", "midjourney"];
+const AUDIO_KEYWORDS = ["audio", "tts", "speech", "voice", "music", "sound", "whisper", "cosyvoice", "fish-audio"];
+const IMAGE_KEYWORDS = ["seedream", "gpt-image", "image", "imagine", "dall-e", "dalle", "imagen", "flux", "sdxl", "sd3", "stable-diffusion", "midjourney", "mj-", "recraft", "ideogram", "kolors", "cogview", "playground", "photomaker", "schnell", "grok-imagine"];
 
 /** Best-effort default capability for a freshly fetched model name; user can override in the channel editor. */
 export function guessCapability(name: string): ModelCapability {
@@ -202,6 +204,7 @@ export function resolveModelScript(config: AiConfig, value: string) {
 function isAiConfigReady(config: AiConfig, model: string) {
     if (useUserStore.getState().token) return true;
     const channel = resolveModelChannel(config, model);
+    if (channel.baseUrl === "/api/ai" || channel.id.startsWith("server-") || channel.id === "server-proxy") return true;
     return Boolean(model.trim() && channel.baseUrl.trim() && channel.apiKey.trim());
 }
 
@@ -237,6 +240,100 @@ export const useConfigStore = create<ConfigStore>()(
             openConfigDialog: (shouldPromptContinue = false, configTab = "channels") => set({ isConfigOpen: true, shouldPromptContinue, configTab }),
             setConfigDialogOpen: (isConfigOpen) => set({ isConfigOpen }),
             clearPromptContinue: () => set({ shouldPromptContinue: false }),
+            syncServerChannels: async () => {
+                try {
+                    const res = await getAvailableModels();
+                    if (!res) return;
+
+                    set((state) => {
+                        const currentChannels = state.config.channels || [];
+                        // Retain user's custom local channels (not starting with "server-" and having valid custom apiKey or non-default baseUrl)
+                        const userLocalChannels = currentChannels.filter(
+                            (c) => !c.id.startsWith("server-") && c.id !== "server-proxy" && (c.apiKey.trim() || (c.baseUrl && c.baseUrl !== OPENAI_BASE_URL && c.baseUrl !== "/api/ai"))
+                        );
+
+                        // Convert server channels into ModelChannels
+                        const serverChannels: ModelChannel[] = (res.channels || []).map((sc) => ({
+                            id: `server-${sc.id}`,
+                            name: sc.name,
+                            baseUrl: "/api/ai",
+                            apiKey: "",
+                            apiFormat: sc.providerType === "gemini" ? "gemini" : "openai",
+                            models: (sc.models || []).map((m) => ({
+                                name: m,
+                                capability: guessCapability(m),
+                            })),
+                        }));
+
+                        // If no per-channel data returned (legacy fallback), create server-proxy channel if any models exist
+                        if (serverChannels.length === 0 && (res.imageModels?.length || res.chatModels?.length || res.allModels?.length)) {
+                            const combined = Array.from(new Set([...(res.imageModels || []), ...(res.chatModels || []), ...(res.allModels || [])]));
+                            serverChannels.push({
+                                id: "server-proxy",
+                                name: "云端服务池",
+                                baseUrl: "/api/ai",
+                                apiKey: "",
+                                apiFormat: "openai",
+                                models: combined.map((m) => ({
+                                    name: m,
+                                    capability: guessCapability(m),
+                                })),
+                            });
+                        }
+
+                        if (serverChannels.length === 0 && userLocalChannels.length === 0) {
+                            return state;
+                        }
+
+                        const mergedChannels = [...serverChannels, ...userLocalChannels];
+                        const models = modelOptionsFromChannels(mergedChannels);
+
+                        // Helper to resolve active model for capability
+                        const resolveActiveModel = (currentVal: string | undefined, capability: ModelCapability, defaultFromApi?: string) => {
+                            const decoded = decodeChannelModel(currentVal || "");
+                            const exists = decoded && mergedChannels.some((c) => c.id === decoded.channelId && c.models.some((m) => m.name === decoded.model));
+                            if (exists) return currentVal!;
+
+                            // Try finding model in server channels matching defaultFromApi
+                            if (defaultFromApi) {
+                                for (const sc of serverChannels) {
+                                    if (sc.models.some((m) => m.name === defaultFromApi)) {
+                                        return encodeChannelModel(sc.id, defaultFromApi);
+                                    }
+                                }
+                            }
+
+                            // Fall back to first server model with that capability
+                            for (const sc of serverChannels) {
+                                const match = sc.models.find((m) => m.capability === capability);
+                                if (match) return encodeChannelModel(sc.id, match.name);
+                            }
+
+                            return currentVal || "";
+                        };
+
+                        const imageModel = resolveActiveModel(state.config.imageModel, "image", res.defaultImageModel || res.defaultModel);
+                        const videoModel = resolveActiveModel(state.config.videoModel, "video");
+                        const textModel = resolveActiveModel(state.config.textModel, "text");
+                        const audioModel = resolveActiveModel(state.config.audioModel, "audio");
+
+                        return {
+                            config: {
+                                ...state.config,
+                                channels: mergedChannels,
+                                models,
+                                imageModel: imageModel || state.config.imageModel,
+                                videoModel: videoModel || state.config.videoModel,
+                                textModel: textModel || state.config.textModel,
+                                audioModel: audioModel || state.config.audioModel,
+                                model: imageModel || state.config.model,
+                            },
+                        };
+                    });
+                } catch {
+                    // Silently ignore if server unavailable
+                }
+            },
         }),
         {
             name: CONFIG_STORE_KEY,

@@ -1,15 +1,12 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import { getAiConfig } from "../db.js";
-import { authenticateToken } from "../middleware/auth.js";
+import { authenticateToken, optionalAuthenticateToken } from "../middleware/auth.js";
 import { categorizeModels } from "./admin/channels.js";
 import { AiRouter, getAggregatedModels, getCandidateChannels } from "../services/ai-router.js";
 import { AiAuditService } from "../services/ai-audit.js";
 
 export const aiRouter = Router();
-
-// Route Guard: Protect all /api/ai endpoints with JWT authentication
-aiRouter.use(authenticateToken);
 
 // Multer memory storage middleware for multipart image edits
 const upload = multer({
@@ -18,9 +15,9 @@ const upload = multer({
 });
 
 // ============================================================================
-// 1. GET /api/ai/models - Aggregate models across all active channels
+// 1. GET /api/ai/models - Aggregate models across all active channels (public/optional auth)
 // ============================================================================
-aiRouter.get("/models", (_req: Request, res: Response) => {
+aiRouter.get("/models", optionalAuthenticateToken, (_req: Request, res: Response) => {
   const aggregated = getAggregatedModels();
   res.json(aggregated);
 });
@@ -28,7 +25,7 @@ aiRouter.get("/models", (_req: Request, res: Response) => {
 // ============================================================================
 // 2. POST /api/ai/models/probe - Test probe upstream models endpoint
 // ============================================================================
-aiRouter.post("/models/probe", async (req: Request, res: Response) => {
+aiRouter.post("/models/probe", authenticateToken, async (req: Request, res: Response) => {
   const currentConfig = getAiConfig();
   const rawBaseUrl = (typeof req.body?.baseUrl === "string" && req.body.baseUrl.trim()) || currentConfig.baseUrl;
   const rawApiKey = (typeof req.body?.apiKey === "string" && req.body.apiKey.trim() && !req.body.apiKey.includes("****"))

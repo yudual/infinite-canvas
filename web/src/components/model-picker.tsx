@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { modelOptionLabel, modelOptionName, selectableModelsByCapability, type AiConfig, type ModelCapability } from "@/stores/use-config-store";
+import { modelOptionLabel, modelOptionName, selectableModelsByCapability, useConfigStore, type AiConfig, type ModelCapability } from "@/stores/use-config-store";
 
 type ModelPickerProps = {
     config: AiConfig;
@@ -27,6 +27,12 @@ export function ModelPicker({ config, value, onChange, capability, className, fu
     const pickerPlaceholder = placeholder || t("settingsPanels.model.select");
 
     useEffect(() => {
+        if (!options.length) {
+            void useConfigStore.getState().syncServerChannels();
+        }
+    }, [options.length]);
+
+    useEffect(() => {
         const closeOtherPicker = (event: Event) => {
             if ((event as CustomEvent<string>).detail !== pickerId) setOpen(false);
         };
@@ -39,7 +45,10 @@ export function ModelPicker({ config, value, onChange, capability, className, fu
             open={open}
             value={current}
             onOpenChange={(nextOpen) => {
-                if (nextOpen && !options.length && config.channelMode === "local") onMissingConfig?.();
+                if (nextOpen && !options.length) {
+                    void useConfigStore.getState().syncServerChannels();
+                    if (config.channelMode === "local") onMissingConfig?.();
+                }
                 if (nextOpen) window.dispatchEvent(new CustomEvent("model-picker-open", { detail: pickerId }));
                 setOpen(nextOpen);
             }}

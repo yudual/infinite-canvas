@@ -12,6 +12,7 @@ import {
     syncAdminChannelModels,
 } from "@/services/api/admin";
 import { AdminChannelModal } from "./admin-channel-modal";
+import { useConfigStore } from "@/stores/use-config-store";
 
 const { Text } = Typography;
 
@@ -53,6 +54,7 @@ export function AdminChannelsPanel() {
             setChannels((prev) =>
                 prev.map((c) => (c.id === channel.id ? { ...c, isActive: checked } : c))
             );
+            void useConfigStore.getState().syncServerChannels();
         } catch (err: any) {
             message.error(err.response?.data?.message || "切换渠道状态失败");
         }
@@ -63,6 +65,7 @@ export function AdminChannelsPanel() {
             await deleteAdminChannel(id);
             message.success("渠道删除成功");
             void loadChannels(page, limit, search);
+            void useConfigStore.getState().syncServerChannels();
         } catch (err: any) {
             message.error(err.response?.data?.message || "删除渠道失败");
         }
@@ -92,6 +95,7 @@ export function AdminChannelsPanel() {
             if (res.success) {
                 message.success(`已从 [${channel.name}] 同步更新 ${res.total} 个模型`);
                 void loadChannels(page, limit, search);
+                void useConfigStore.getState().syncServerChannels();
             }
         } catch (err: any) {
             message.error(err.response?.data?.message || "模型同步失败");
@@ -110,6 +114,7 @@ export function AdminChannelsPanel() {
                 message.success("新渠道创建成功");
             }
             void loadChannels(page, limit, search);
+            void useConfigStore.getState().syncServerChannels();
             return true;
         } catch (err: any) {
             message.error(err.response?.data?.message || "保存渠道失败");

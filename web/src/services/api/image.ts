@@ -747,7 +747,7 @@ export async function requestGeneration(config: AiConfig, prompt: string, option
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
-    if (useUserStore.getState().token && (!requestConfig.apiKey || requestConfig.baseUrl === "/api/ai")) {
+    if (requestConfig.baseUrl === "/api/ai" || (!requestConfig.apiKey && Boolean(useUserStore.getState().token))) {
         const quality = normalizeQuality(config.quality);
         const requestSize = resolveRequestSize(quality, config.size);
         const background = normalizeBackground(config.background);
@@ -827,7 +827,7 @@ export async function requestEdit(config: AiConfig, prompt: string, references: 
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
-    if (useUserStore.getState().token && (!requestConfig.apiKey || requestConfig.baseUrl === "/api/ai")) {
+    if (requestConfig.baseUrl === "/api/ai" || (!requestConfig.apiKey && Boolean(useUserStore.getState().token))) {
         const quality = normalizeQuality(config.quality);
         const requestSize = resolveRequestSize(quality, config.size);
         const background = normalizeBackground(config.background);
@@ -902,7 +902,7 @@ export async function requestImageQuestion(config: AiConfig, messages: AiTextMes
             throw new Error(readAxiosError(error, apiText("requestFailed")));
         }
     }
-    if (useUserStore.getState().token) {
+    if (requestConfig.baseUrl === "/api/ai" || (!requestConfig.apiKey && Boolean(useUserStore.getState().token))) {
         try {
             const fullMessages = withSystemMessage(requestConfig, messages) as ProxyChatMessage[];
             const answer = await proxyChatCompletion(

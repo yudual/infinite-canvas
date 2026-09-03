@@ -1,4 +1,4 @@
-import { App, Button, Form, Input, Modal, Progress, Select, Tabs } from "antd";
+import { App, Button, Form, Input, Modal, Progress, Select, Tabs, Tag } from "antd";
 import type { TFunction } from "i18next";
 import { Cloud, Download, Pencil, Plus, RefreshCw, Trash2, Upload, Wifi } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -192,22 +192,36 @@ export function AppConfigPanel({ showDoneButton = false, initialTab = "channels"
                                     </Button>
                                 </div>
                                 <div className="space-y-2">
-                                    {config.channels.map((channel) => (
-                                        <div key={channel.id} className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 px-4 py-3 dark:border-stone-800">
-                                            <div className="min-w-0">
-                                                <div className="truncate text-sm font-semibold">{channel.name || t("config.channels.unnamed")}</div>
-                                                <div className="mt-1 truncate text-xs text-stone-500">
-                                                    {apiFormatLabel(channel.apiFormat)} · {t("config.channels.modelCount", { count: channel.models.length })} · {channel.baseUrl || t("config.channels.missingUrl")}
+                                    {config.channels.map((channel) => {
+                                        const isServerChannel = channel.id.startsWith("server-") || channel.id === "server-proxy";
+                                        return (
+                                            <div key={channel.id} className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 px-4 py-3 dark:border-stone-800">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="truncate text-sm font-semibold">{channel.name || t("config.channels.unnamed")}</span>
+                                                        {isServerChannel && (
+                                                            <Tag color="purple" className="text-[10px] leading-tight">云端服务池</Tag>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-1 truncate text-xs text-stone-500">
+                                                        {apiFormatLabel(channel.apiFormat)} · {t("config.channels.modelCount", { count: channel.models.length })} · {isServerChannel ? "由服务端托管" : (channel.baseUrl || t("config.channels.missingUrl"))}
+                                                    </div>
+                                                </div>
+                                                <div className="flex shrink-0 items-center gap-2">
+                                                    {!isServerChannel ? (
+                                                        <>
+                                                            <Button size="small" icon={<Pencil className="size-3.5" />} onClick={() => setEditingChannelId(channel.id)}>
+                                                                {t("common.edit")}
+                                                            </Button>
+                                                            <Button size="small" danger icon={<Trash2 className="size-3.5" />} onClick={() => deleteChannel(channel.id)} />
+                                                        </>
+                                                    ) : (
+                                                        <Tag color="default" className="text-xs">管理后台配置</Tag>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="flex shrink-0 gap-2">
-                                                <Button size="small" icon={<Pencil className="size-3.5" />} onClick={() => setEditingChannelId(channel.id)}>
-                                                    {t("common.edit")}
-                                                </Button>
-                                                <Button size="small" danger icon={<Trash2 className="size-3.5" />} onClick={() => deleteChannel(channel.id)} />
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ),

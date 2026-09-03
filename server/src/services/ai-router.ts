@@ -100,30 +100,50 @@ export function getCandidateChannels(targetModel?: string): ChannelRecord[] {
 export function getAggregatedModels() {
   const activeChannels = getActiveAiChannels();
   const allImageModels: string[] = [];
+  const allVideoModels: string[] = [];
+  const allAudioModels: string[] = [];
   const allChatModels: string[] = [];
   let defaultModel = "";
 
-  for (const channel of activeChannels) {
+  const channels = activeChannels.map((channel) => {
     if (!defaultModel && channel.default_model) defaultModel = channel.default_model;
+    let parsedModels: string[] = [];
     try {
-      const models = JSON.parse(channel.models);
-      if (Array.isArray(models)) {
-        const { imageModels, chatModels, otherModels } = categorizeModels(models);
-        allImageModels.push(...imageModels);
-        allChatModels.push(...chatModels);
-        for (const m of otherModels) allImageModels.push(m);
-      }
+      const parsed = JSON.parse(channel.models);
+      if (Array.isArray(parsed)) parsedModels = parsed;
     } catch {}
-  }
+
+    const { imageModels, videoModels, audioModels, chatModels, otherModels } = categorizeModels(parsedModels);
+    allImageModels.push(...imageModels);
+    allChatModels.push(...chatModels);
+    if (videoModels) allVideoModels.push(...videoModels);
+    if (audioModels) allAudioModels.push(...audioModels);
+    for (const m of otherModels) allImageModels.push(m);
+
+    return {
+      id: channel.id,
+      name: channel.name,
+      providerType: channel.provider_type || "openai",
+      models: parsedModels,
+      defaultModel: channel.default_model || parsedModels[0] || "",
+      priority: channel.priority ?? 0,
+      weight: channel.weight ?? 1,
+    };
+  });
 
   const imageModels = Array.from(new Set(allImageModels));
+  const videoModels = Array.from(new Set(allVideoModels));
+  const audioModels = Array.from(new Set(allAudioModels));
   const chatModels = Array.from(new Set(allChatModels));
   if (!defaultModel) defaultModel = imageModels[0] || "dall-e-3";
 
-  if (imageModels.length === 0 && chatModels.length === 0) {
+  if (channels.length === 0 && imageModels.length === 0 && chatModels.length === 0) {
     const legacy = getAiConfig();
     return {
+      channels: [],
       imageModels: legacy.imageModels,
+      videoModels: [],
+      audioModels: [],
       defaultModel: legacy.defaultModel,
       defaultImageModel: legacy.defaultModel,
       chatModels: legacy.chatModels,
@@ -132,11 +152,14 @@ export function getAggregatedModels() {
   }
 
   return {
+    channels,
     imageModels,
+    videoModels,
+    audioModels,
+    chatModels,
+    allModels: Array.from(new Set([...imageModels, ...videoModels, ...audioModels, ...chatModels])),
     defaultModel,
     defaultImageModel: defaultModel,
-    chatModels,
-    allModels: Array.from(new Set([...imageModels, ...chatModels])),
   };
 }
 

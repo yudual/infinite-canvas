@@ -20,7 +20,15 @@ export function categorizeModels(modelIds: string[]) {
   const imageKeywords = [
     "dall-e", "flux", "stable-diffusion", "sd-", "sdxl", "sd3",
     "midjourney", "mj-", "recraft", "ideogram", "image", "kolors",
-    "cogview", "imagen", "playground", "photomaker", "schnell", "dev", "pro"
+    "cogview", "imagen", "playground", "photomaker", "schnell", "dev", "pro",
+    "grok-imagine", "seedream"
+  ];
+  const videoKeywords = [
+    "video", "sora", "veo", "kling", "wan", "hailuo", "luma", "runway", "pika",
+    "cogvideox", "minimax", "vidu"
+  ];
+  const audioKeywords = [
+    "audio", "tts", "speech", "voice", "music", "sound", "whisper", "cosyvoice", "fish-audio"
   ];
   const chatKeywords = [
     "gpt", "claude", "deepseek", "gemini", "qwen", "glm", "llama",
@@ -28,15 +36,23 @@ export function categorizeModels(modelIds: string[]) {
   ];
 
   const imageModels: string[] = [];
+  const videoModels: string[] = [];
+  const audioModels: string[] = [];
   const chatModels: string[] = [];
   const otherModels: string[] = [];
 
   for (const id of modelIds) {
     const lower = id.toLowerCase();
+    const isVideo = videoKeywords.some((k) => lower.includes(k));
+    const isAudio = audioKeywords.some((k) => lower.includes(k));
     const isImage = imageKeywords.some((k) => lower.includes(k));
     const isChat = chatKeywords.some((k) => lower.includes(k));
 
-    if (isImage) {
+    if (isVideo) {
+      videoModels.push(id);
+    } else if (isAudio) {
+      audioModels.push(id);
+    } else if (isImage) {
       imageModels.push(id);
     } else if (isChat) {
       chatModels.push(id);
@@ -45,7 +61,7 @@ export function categorizeModels(modelIds: string[]) {
     }
   }
 
-  return { imageModels, chatModels, otherModels, allModels: modelIds };
+  return { imageModels, videoModels, audioModels, chatModels, otherModels, allModels: modelIds };
 }
 
 /**

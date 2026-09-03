@@ -113,6 +113,7 @@ export default function ImagePage() {
 
     useEffect(() => {
         void refreshLogs();
+        void useConfigStore.getState().syncServerChannels();
     }, []);
 
     const addReferences = async (files?: FileList | null) => {
