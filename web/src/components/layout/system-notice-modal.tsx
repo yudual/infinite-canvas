@@ -70,7 +70,35 @@ export function SystemNoticeModal() {
     const isZh = i18n.language?.startsWith("zh");
 
     if (!notice || !notice.enabled) {
-        return null;
+        if (!open) return null;
+        return (
+            <Modal
+                open={open}
+                onCancel={() => closeNotice()}
+                centered
+                width="min(480px, 92vw)"
+                title={
+                    <div className="flex items-center gap-2 text-base font-semibold text-stone-900 dark:text-stone-100">
+                        <span className="flex size-7 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                            <Megaphone className="size-4" />
+                        </span>
+                        <span>{isZh ? "全站系统公告" : "System Notice"}</span>
+                    </div>
+                }
+                footer={
+                    <div className="flex justify-end border-t border-stone-200/60 pt-3 dark:border-stone-800/60">
+                        <Button type="primary" onClick={() => closeNotice()}>
+                            {isZh ? "我知道了" : "Got it"}
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="py-8 text-center text-stone-500 dark:text-stone-400">
+                    <Megaphone className="mx-auto mb-3 size-10 text-stone-300 dark:text-stone-600" />
+                    <p className="text-sm font-medium">{isZh ? "当前暂无生效中的全站系统公告" : "No active system announcements at this time."}</p>
+                </div>
+            </Modal>
+        );
     }
 
     const handleOk = () => {

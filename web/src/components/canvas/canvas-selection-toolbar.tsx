@@ -37,11 +37,16 @@ export function CanvasSelectionToolbar({
     const width = (bounds.right - bounds.left) * viewport.k + SELECTION_PAD * 2;
     const height = (bounds.bottom - bounds.top) * viewport.k + SELECTION_PAD * 2;
     const showActions = showToolbar && (canGroup || canUngroup);
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+    const windowWidth = typeof window !== "undefined" ? window.innerWidth : 800;
+    const windowHeight = typeof window !== "undefined" ? window.innerHeight : 600;
+
     const rawLeft = left + width / 2;
     const rawTop = top - 8;
     const isFlipped = rawTop < 72;
-    const actionTop = isFlipped ? top + height + 8 : rawTop;
-    const actionLeft = Math.max(16, Math.min(typeof window !== "undefined" ? window.innerWidth - 16 : 800, rawLeft));
+    const targetTop = isFlipped ? top + height + 8 : rawTop;
+    const actionTop = Math.max(72, Math.min(windowHeight - 72, targetTop));
+    const actionLeft: number | string = isMobile ? "50%" : Math.max(120, Math.min(windowWidth - 120, rawLeft));
 
     return (
         <>

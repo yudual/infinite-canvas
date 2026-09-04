@@ -197,6 +197,7 @@ function InfiniteCanvasPage() {
         startY: 0,
         initialSelectedNodes: [],
     });
+    const activeTouchesRef = useRef<Set<number>>(new Set());
 
     const config = useConfigStore((state) => state.config);
     const effectiveConfig = useEffectiveConfig();
@@ -1310,50 +1311,12 @@ function InfiniteCanvasPage() {
         }
     }, []);
 
-    const handleGlobalMouseMove = useCallback(
-        (event: MouseEvent) => {
-            const currentViewport = viewportRef.current;
-
-            if (dragRef.current.isDraggingNode) {
-                const dx = (event.clientX - dragRef.current.startX) / currentViewport.k;
-                const dy = (event.clientY - dragRef.current.startY) / currentViewport.k;
-                const initialPositions = dragRef.current.initialSelectedNodes;
-                if (Math.abs(event.clientX - dragRef.current.startX) > 3 || Math.abs(event.clientY - dragRef.current.startY) > 3) {
-                    dragRef.current.hasMoved = true;
-                }
-
-                const movedIds = new Set(initialPositions.map((item) => item.id));
-                const previewNodes = nodesRef.current.map((node) => {
-                    const initial = initialPositions.find((item) => item.id === node.id);
-                    return initial ? { ...node, position: { x: initial.x + dx, y: initial.y + dy } } : node;
-                });
-                setDropTargetGroupId(findGroupDropTarget(movedIds, previewNodes)?.id || null);
-
-                if (rafRef.current) cancelAnimationFrame(rafRef.current);
-                rafRef.current = requestAnimationFrame(() => {
-                    setNodes((prev) =>
-                        prev.map((node) => {
-                            const initial = initialPositions.find((item) => item.id === node.id);
-                            return initial ? { ...node, position: { x: initial.x + dx, y: initial.y + dy } } : node;
-                        }),
-                    );
-                    rafRef.current = null;
-                });
+    const handleGlobalPointerMove = useCallback(
+        (event: PointerEvent) => {
+            if (event.pointerType === "touch" && activeTouchesRef.current.size >= 2) {
                 return;
             }
 
-            if (connectingParamsRef.current && !pendingConnectionCreateRef.current) {
-                const dropTarget = getConnectionDropTarget(event.clientX, event.clientY, connectingParamsRef.current);
-                connectionTargetNodeIdRef.current = dropTarget.nodeId;
-                setConnectionTargetNodeId(dropTarget.nodeId);
-                setMouseWorld(screenToCanvas(event.clientX, event.clientY));
-            }
-        },
-        [finishNodeDrag, getConnectionDropTarget, screenToCanvas],
-    );
-
-    const handleGlobalPointerMove = useCallback(
-        (event: PointerEvent) => {
             const currentViewport = viewportRef.current;
 
             if (dragRef.current.isDraggingNode) {
@@ -1395,7 +1358,7 @@ function InfiniteCanvasPage() {
             const currentSelection = selectionBoxRef.current;
             if (!currentSelection) return;
 
-            if (event.buttons === 0) {
+            if (event.buttons === 0 && event.pointerType !== "touch") {
                 selectionBoxRef.current = null;
                 setSelectionBox(null);
                 return;
@@ -1450,23 +1413,44 @@ function InfiniteCanvasPage() {
     );
 
     useEffect(() => {
-        const handlePointerUp = (event: PointerEvent) => handleGlobalMouseUp(event);
-        const cancelNodeDrag = () => finishNodeDrag();
-        window.addEventListener("mousemove", handleGlobalMouseMove);
-        window.addEventListener("mouseup", handleGlobalMouseUp);
+        const handleWindowPointerDown = (event: PointerEvent) => {
+            if (event.pointerType === "touch") {
+                activeTouchesRef.current.add(event.pointerId);
+                if (activeTouchesRef.current.size >= 2) {
+                    finishNodeDrag();
+                }
+            }
+        };
+
+        const handlePointerUp = (event: PointerEvent) => {
+            if (event.pointerType === "touch") {
+                activeTouchesRef.current.delete(event.pointerId);
+            }
+            handleGlobalMouseUp(event);
+        };
+
+        const cancelNodeDrag = (event?: PointerEvent) => {
+            if (event?.pointerType === "touch") {
+                activeTouchesRef.current.delete(event.pointerId);
+            } else {
+                activeTouchesRef.current.clear();
+            }
+            finishNodeDrag();
+        };
+
+        window.addEventListener("pointerdown", handleWindowPointerDown, { capture: true });
+        window.addEventListener("pointermove", handleGlobalPointerMove);
         window.addEventListener("pointerup", handlePointerUp);
         window.addEventListener("pointercancel", cancelNodeDrag);
-        window.addEventListener("blur", cancelNodeDrag);
-        window.addEventListener("pointermove", handleGlobalPointerMove);
+        window.addEventListener("blur", () => cancelNodeDrag());
         return () => {
-            window.removeEventListener("mousemove", handleGlobalMouseMove);
-            window.removeEventListener("mouseup", handleGlobalMouseUp);
+            window.removeEventListener("pointerdown", handleWindowPointerDown, { capture: true });
+            window.removeEventListener("pointermove", handleGlobalPointerMove);
             window.removeEventListener("pointerup", handlePointerUp);
             window.removeEventListener("pointercancel", cancelNodeDrag);
-            window.removeEventListener("blur", cancelNodeDrag);
-            window.removeEventListener("pointermove", handleGlobalPointerMove);
+            window.removeEventListener("blur", () => cancelNodeDrag());
         };
-    }, [finishNodeDrag, handleGlobalMouseMove, handleGlobalMouseUp, handleGlobalPointerMove]);
+    }, [finishNodeDrag, handleGlobalMouseUp, handleGlobalPointerMove]);
 
     const createImageFileNode = useCallback(async (file: File, position: Position) => {
         const image = await uploadImage(file);

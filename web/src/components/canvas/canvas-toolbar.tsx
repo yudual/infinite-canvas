@@ -105,7 +105,7 @@ export function CanvasToolbar({
         : { left: sidePanelOpen ? sidePanelWidth + 16 : 16, right: 16 };
 
     return (
-        <div ref={rootRef} className="pointer-events-none absolute bottom-3 sm:bottom-5 z-50 flex justify-center transition-all duration-300" style={toolbarPositionStyle}>
+        <div ref={rootRef} className="pointer-events-none absolute bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:bottom-5 z-50 flex justify-center transition-all duration-300" style={toolbarPositionStyle}>
             {tip ? <DockTip label={tip} x={tipX} theme={theme} /> : null}
             <div ref={wrapRef} className="thin-scrollbar pointer-events-auto flex h-12 sm:h-14 max-w-full items-center gap-1 overflow-x-auto rounded-xl border px-2 shadow-lg backdrop-blur [&>*]:shrink-0" style={dockStyle}>
                 <ToolbarButton id={`tool-${canvasTool}`} label={t(`canvas.toolbar.${canvasTool}`)} active hovered={hovered} activeStyle={activeStyle} hoverStyle={hoverStyle} wrapRef={wrapRef} onTipX={setTipX} onHover={setHovered} onClick={() => onCanvasToolChange(canvasTool === "select" ? "pan" : "select")}>

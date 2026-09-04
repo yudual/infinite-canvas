@@ -107,11 +107,16 @@ export function CanvasNodeHoverToolbar({
     if (!node) return null;
 
     const activeNode = node;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+    const windowWidth = typeof window !== "undefined" ? window.innerWidth : 800;
+    const windowHeight = typeof window !== "undefined" ? window.innerHeight : 600;
+
     const rawLeft = viewport.x + (node.position.x + node.width / 2) * viewport.k;
     const rawTop = viewport.y + node.position.y * viewport.k - 14;
     const isFlipped = rawTop < 72;
-    const top = isFlipped ? viewport.y + (node.position.y + node.height) * viewport.k + 14 : rawTop;
-    const left = Math.max(16, Math.min(typeof window !== "undefined" ? window.innerWidth - 16 : 800, rawLeft));
+    const targetTop = isFlipped ? viewport.y + (node.position.y + node.height) * viewport.k + 14 : rawTop;
+    const top = Math.max(72, Math.min(windowHeight - 72, targetTop));
+    const left: number | string = isMobile ? "50%" : Math.max(160, Math.min(windowWidth - 160, rawLeft));
     const isImage = node.type === CanvasNodeType.Image;
     const isVideo = node.type === CanvasNodeType.Video;
     const isAudio = node.type === CanvasNodeType.Audio;

@@ -326,7 +326,7 @@ export const CanvasNode = React.memo(function CanvasNode({
     return (
         <div
             data-node-id={data.id}
-            className={`node-element absolute flex select-none flex-col transition-shadow duration-200 ${isGroup ? "z-[5]" : isSelected ? "z-50" : "z-10"} ${referenceSelectionState === "available" ? "cursor-pointer" : referenceSelectionState ? "cursor-not-allowed" : ""}`}
+            className={`node-element absolute flex select-none flex-col transition-shadow duration-200 touch-none ${isGroup ? "z-[5]" : isSelected ? "z-50" : "z-10"} ${referenceSelectionState === "available" ? "cursor-pointer" : referenceSelectionState ? "cursor-not-allowed" : ""}`}
             style={{
                 transform: `translate(${data.position.x}px, ${data.position.y}px)`,
                 width: data.width,
@@ -392,7 +392,7 @@ export const CanvasNode = React.memo(function CanvasNode({
             )}
 
             <div
-                className="relative h-full w-full overflow-visible rounded-3xl border-2"
+                className="relative h-full w-full overflow-visible rounded-3xl border-2 touch-none"
                 style={{
                     background: isGroup ? "transparent" : hasImageContent || hasVideoContent || transparentBg ? "transparent" : theme.node.fill,
                     borderColor: isGroup ? (isGroupDropTarget || isActive ? selectionBlue : theme.node.stroke) : hasImageContent ? imageBorderColor : isActive ? selectionBlue : isRelated ? theme.node.muted : transparentBg ? "transparent" : theme.node.stroke,
@@ -408,8 +408,12 @@ export const CanvasNode = React.memo(function CanvasNode({
                 }}
                 onPointerDown={(event) => {
                     if (event.pointerType === "touch") {
-                        if (!referenceSelectionState) onMouseDown(event as any, data.id);
-                        else if (referenceSelectionState === "available") {
+                        if (!referenceSelectionState) {
+                            try {
+                                (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+                            } catch {}
+                            onMouseDown(event as any, data.id);
+                        } else if (referenceSelectionState === "available") {
                             event.stopPropagation();
                             onSelectReference?.(data.id);
                         }
@@ -490,7 +494,12 @@ export const CanvasNode = React.memo(function CanvasNode({
                     visible={hovered || isSelected || isConnecting}
                     onMouseDown={(event) => onConnectStart(event, data.id, "target")}
                     onPointerDown={(event) => {
-                        if (event.pointerType === "touch") onConnectStart(event as any, data.id, "target");
+                        if (event.pointerType === "touch") {
+                            try {
+                                (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+                            } catch {}
+                            onConnectStart(event as any, data.id, "target");
+                        }
                     }}
                 />
             ) : null}
@@ -500,7 +509,12 @@ export const CanvasNode = React.memo(function CanvasNode({
                     visible={hovered || isSelected || isConnecting}
                     onMouseDown={(event) => onConnectStart(event, data.id, "source")}
                     onPointerDown={(event) => {
-                        if (event.pointerType === "touch") onConnectStart(event as any, data.id, "source");
+                        if (event.pointerType === "touch") {
+                            try {
+                                (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+                            } catch {}
+                            onConnectStart(event as any, data.id, "source");
+                        }
                     }}
                 />
             ) : null}

@@ -125,9 +125,12 @@
     body {
         height: 100%;
         overflow: hidden;
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
     }
     body {
         @apply bg-background text-foreground;
+        touch-action: manipulation;
     }
     textarea {
         resize: none;

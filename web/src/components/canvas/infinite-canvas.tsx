@@ -285,9 +285,40 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
             if (target?.closest("[data-canvas-no-zoom],.ant-modal,.ant-popover,.ant-dropdown,.ant-select-dropdown,.ant-picker-dropdown")) return;
             event.preventDefault();
         };
+
+        const handleCapturePointerDown = (event: PointerEvent) => {
+            if (event.pointerType === "touch") {
+                touchPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                if (touchPointersRef.current.size >= 2) {
+                    const pointers = Array.from(touchPointersRef.current.values());
+                    const p1 = pointers[0];
+                    const p2 = pointers[1];
+                    const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                    const midX = (p1.x + p2.x) / 2;
+                    const midY = (p1.y + p2.y) / 2;
+                    pinchStateRef.current = {
+                        initialDist: dist,
+                        initialScale: viewport.k,
+                        initialViewportX: viewport.x,
+                        initialViewportY: viewport.y,
+                        midX,
+                        midY,
+                    };
+                    panState.current.isPanning = false;
+                    setIsPanning(false);
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            }
+        };
+
         container.addEventListener("wheel", preventWheelScroll, { passive: false });
-        return () => container.removeEventListener("wheel", preventWheelScroll);
-    }, [containerRef]);
+        container.addEventListener("pointerdown", handleCapturePointerDown, { capture: true });
+        return () => {
+            container.removeEventListener("wheel", preventWheelScroll);
+            container.removeEventListener("pointerdown", handleCapturePointerDown, { capture: true });
+        };
+    }, [containerRef, viewport.k, viewport.x, viewport.y]);
 
     const temporaryTool = isControlPressed || isSpacePressed;
     const activeTool = temporaryTool ? (tool === "select" ? "pan" : "select") : tool;
