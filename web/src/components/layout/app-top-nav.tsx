@@ -19,6 +19,7 @@ export function AppTopNav() {
     const autoConnectRef = useRef(false);
     const openNotice = useNoticeStore((state) => state.openNotice);
     const hasCheckedToday = useNoticeStore((state) => state.hasCheckedToday);
+    const notice = useNoticeStore((state) => state.notice);
     const agentToken = useAgentStore((state) => state.token);
     const agentEnabled = useAgentStore((state) => state.enabled);
     const agentConnected = useAgentStore((state) => state.connected);
@@ -39,7 +40,7 @@ export function AppTopNav() {
         <>
             {!hideHeader ? (
                 <header className="sticky top-0 z-20 h-14 shrink-0 border-b border-stone-200 bg-background/90 backdrop-blur-xl dark:border-stone-800">
-                    <div className="mx-auto flex h-full max-w-7xl items-stretch justify-between gap-5 px-6">
+                    <div className="mx-auto flex h-full max-w-7xl items-stretch justify-between gap-2 sm:gap-5 px-3 sm:px-6">
                         <div className="flex min-w-0 items-center">
                             <Link to="/" className="flex h-full shrink-0 items-center gap-2 text-sm font-semibold leading-none tracking-tight text-stone-950 transition hover:text-stone-600 dark:text-stone-100 dark:hover:text-stone-300">
                                 <span
@@ -49,12 +50,12 @@ export function AppTopNav() {
                                         WebkitMask: "url(/logo.svg) center / contain no-repeat",
                                     }}
                                 />
-                                <span className="text-base font-medium">{t("meta.title")}</span>
+                                <span className="text-base font-medium truncate max-w-[130px] sm:max-w-none">{t("meta.title")}</span>
                             </Link>
 
                             <button
                                 type="button"
-                                className="ml-3 inline-flex size-8 shrink-0 items-center justify-center text-stone-600 transition hover:text-stone-950 md:hidden dark:text-stone-300 dark:hover:text-white"
+                                className="ml-2 sm:ml-3 inline-flex size-8 shrink-0 items-center justify-center text-stone-600 transition hover:text-stone-950 md:hidden dark:text-stone-300 dark:hover:white"
                                 onClick={() => setMobileNavOpen(true)}
                                 aria-label={t("topNav.openMenu")}
                                 title={t("topNav.menu")}
@@ -85,24 +86,26 @@ export function AppTopNav() {
                             </nav>
                         </div>
 
-                        <div className="my-auto flex h-9 min-w-0 items-center justify-end gap-2 justify-self-end whitespace-nowrap">
-                            <Tooltip title={i18n.language?.startsWith("zh") ? "系统公告" : "System Notice"}>
-                                <Button
-                                    type="text"
-                                    shape="circle"
-                                    className="!h-8 !w-8 !min-w-8"
-                                    icon={
-                                        <span className="relative inline-flex items-center justify-center">
-                                            <Bell className="size-4 text-stone-600 dark:text-stone-300" />
-                                            {!hasCheckedToday && (
-                                                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-amber-500 animate-pulse" />
-                                            )}
-                                        </span>
-                                    }
-                                    onClick={openNotice}
-                                    aria-label="系统公告"
-                                />
-                            </Tooltip>
+                        <div className="my-auto flex h-9 min-w-0 items-center justify-end gap-1 sm:gap-2 justify-self-end whitespace-nowrap">
+                            {notice?.enabled !== false && (
+                                <Tooltip title={i18n.language?.startsWith("zh") ? "系统公告" : "System Notice"}>
+                                    <Button
+                                        type="text"
+                                        shape="circle"
+                                        className="!h-8 !w-8 !min-w-8"
+                                        icon={
+                                            <span className="relative inline-flex items-center justify-center">
+                                                <Bell className="size-4 text-stone-600 dark:text-stone-300" />
+                                                {!hasCheckedToday && (
+                                                    <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-amber-500 animate-pulse" />
+                                                )}
+                                            </span>
+                                        }
+                                        onClick={openNotice}
+                                        aria-label="系统公告"
+                                    />
+                                </Tooltip>
+                            )}
                             <Tooltip title={t(panelOpen ? "topNav.closeAgent" : "topNav.openAgent")}>
                                 <Button type="text" shape="circle" className="!h-8 !w-8 !min-w-8" icon={<Bot className="size-4" />} onClick={togglePanel} aria-label={t(panelOpen ? "topNav.closeAgent" : "topNav.openAgent")} />
                             </Tooltip>

@@ -10,6 +10,7 @@ import {
     FileText,
     ArrowLeft,
     ShieldCheck,
+    Megaphone,
 } from "lucide-react";
 import { useAdminData } from "./hooks/use-admin-data";
 import { AdminOverviewCard } from "./components/admin-overview-card";
@@ -18,6 +19,7 @@ import { AdminUserTable } from "./components/admin-user-table";
 import { AdminAssetsPanel } from "./components/admin-assets-panel";
 import { AdminProjectsPanel } from "./components/admin-projects-panel";
 import { AdminAuditLogsPanel } from "./components/admin-audit-logs-panel";
+import { AdminNoticePanel } from "./components/admin-notice-panel";
 import { UserStatusActions } from "@/components/layout/user-status-actions";
 import { useUserStore } from "@/stores/use-user-store";
 
@@ -140,6 +142,16 @@ export default function AdminPage() {
             ),
             children: <AdminAuditLogsPanel />,
         },
+        {
+            key: "notice",
+            label: (
+                <span className="flex items-center gap-1.5">
+                    <Megaphone className="size-4" />
+                    系统公告设置
+                </span>
+            ),
+            children: <AdminNoticePanel />,
+        },
     ];
 
     return (
@@ -165,24 +177,24 @@ export default function AdminPage() {
                             }}
                         />
                         <div className="flex items-center gap-2">
-                            <span className="text-base font-semibold tracking-tight">Infinite Canvas</span>
+                            <span className="text-base font-semibold tracking-tight hidden sm:inline">Infinite Canvas</span>
                             <span
-                                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
+                                className="inline-flex items-center gap-1 rounded-md px-1.5 sm:px-2 py-0.5 text-xs font-medium"
                                 style={{
                                     backgroundColor: token.colorPrimaryBg,
                                     color: token.colorPrimaryText,
                                 }}
                             >
                                 <ShieldCheck className="size-3.5" />
-                                管理控制台
+                                <span>管理控制台</span>
                             </span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 sm:gap-3">
                         <Link to="/">
                             <Button type="text" icon={<ArrowLeft className="size-4" />} size="middle">
-                                返回工作台
+                                <span className="hidden sm:inline">返回工作台</span>
                             </Button>
                         </Link>
                         <UserStatusActions showConfig={false} />

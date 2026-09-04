@@ -24,20 +24,20 @@ export function CanvasZoomControls({ scale, onScaleChange, onReset, isMiniMapOpe
     const activeStyle = { background: theme.toolbar.activeBg, color: theme.toolbar.activeText };
 
     return (
-        <div className="absolute bottom-5 left-5 z-50" onMouseDown={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
-            <div className="flex h-14 items-center gap-1 rounded-xl border px-2 shadow-lg backdrop-blur" style={dockStyle}>
+        <div className="absolute bottom-16 sm:bottom-5 left-2 sm:left-5 z-50" onMouseDown={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
+            <div className="flex h-11 sm:h-14 items-center gap-1 rounded-xl border px-1.5 sm:px-2 shadow-lg backdrop-blur" style={dockStyle}>
                 <Tooltip title={isMiniMapOpen ? t("canvas.miniMapClose") : t("canvas.miniMapOpen")}>
                     <Button
                         type="text"
-                        className="!h-8 !w-8 !min-w-8 !p-0"
+                        className="!h-7 !w-7 sm:!h-8 sm:!w-8 !min-w-7 sm:!min-w-8 !p-0"
                         style={isMiniMapOpen ? activeStyle : { color: theme.toolbar.item }}
-                        icon={<Compass className="size-4" />}
+                        icon={<Compass className="size-3.5 sm:size-4" />}
                         onClick={onToggleMiniMap}
                         aria-label={isMiniMapOpen ? t("canvas.miniMapClose") : t("canvas.miniMapOpen")}
                     />
                 </Tooltip>
                 <Tooltip title={t("canvas.resetView")}>
-                    <Button type="text" className="!h-8 !w-8 !min-w-8 !p-0" style={{ color: theme.toolbar.item }} icon={<Focus className="size-4" />} onClick={onReset} aria-label={t("canvas.resetView")} />
+                    <Button type="text" className="!h-7 !w-7 sm:!h-8 sm:!w-8 !min-w-7 sm:!min-w-8 !p-0" style={{ color: theme.toolbar.item }} icon={<Focus className="size-3.5 sm:size-4" />} onClick={onReset} aria-label={t("canvas.resetView")} />
                 </Tooltip>
                 <Tooltip title={t("canvas.zoom")}>
                     <input
@@ -46,17 +46,17 @@ export function CanvasZoomControls({ scale, onScaleChange, onReset, isMiniMapOpe
                         max="500"
                         step="1"
                         value={Math.round(scale * 100)}
-                        className="w-24"
+                        className="w-14 sm:w-24"
                         style={{ accentColor: theme.node.activeStroke }}
                         onChange={(event) => onScaleChange(Number(event.target.value) / 100)}
                         aria-label={t("canvas.zoom")}
                     />
                 </Tooltip>
-                <span className="w-10 text-right text-xs tabular-nums" style={{ color: theme.node.muted }}>
+                <span className="w-9 sm:w-10 text-right text-[11px] sm:text-xs tabular-nums" style={{ color: theme.node.muted }}>
                     {Math.round(scale * 100)}%
                 </span>
                 <Tooltip title={t("canvas.shortcuts")}>
-                    <Button type="text" className="!h-8 !w-8 !min-w-8 !p-0" style={shortcutsOpen ? activeStyle : { color: theme.toolbar.item }} icon={<HelpCircle className="size-4" />} onClick={() => setShortcutsOpen(true)} aria-label={t("canvas.shortcuts")} />
+                    <Button type="text" className="!h-7 !w-7 sm:!h-8 sm:!w-8 !min-w-7 sm:!min-w-8 !p-0" style={shortcutsOpen ? activeStyle : { color: theme.toolbar.item }} icon={<HelpCircle className="size-3.5 sm:size-4" />} onClick={() => setShortcutsOpen(true)} aria-label={t("canvas.shortcuts")} />
                 </Tooltip>
             </div>
             <Modal title={t("canvas.shortcuts")} open={shortcutsOpen} onCancel={() => setShortcutsOpen(false)} footer={null} centered>

@@ -458,7 +458,7 @@ export default function ImagePage() {
                                             <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
                                             <button
                                                 type="button"
-                                                className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex"
+                                                className="absolute right-1 top-1 flex sm:hidden sm:group-hover:flex size-6 items-center justify-center rounded bg-black/60 text-white transition"
                                                 onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
                                                 aria-label={t("imageWorkbench.removeReference")}
                                             >

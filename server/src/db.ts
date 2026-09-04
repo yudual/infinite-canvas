@@ -299,6 +299,89 @@ export function setSetting(key: string, value: string): void {
   `).run(key, value, now);
 }
 
+export interface NoticeItem {
+  id?: string;
+  title: string;
+  description: string;
+  type: "info" | "warning" | "tip" | "error";
+}
+
+export interface SystemNoticeConfig {
+  enabled: boolean;
+  title: string;
+  tag: string;
+  tagColor: string;
+  content: string;
+  items: NoticeItem[];
+  footerNote: string;
+  updatedAt: string;
+}
+
+export const DEFAULT_NOTICE_CONFIG: SystemNoticeConfig = {
+  enabled: true,
+  title: "关于 Grok 2.0 图像模型画质设置的重要说明",
+  tag: "重要通知",
+  tagColor: "orange",
+  content: "近期接入的 grok-imagine-image-2.0 图像生成与编辑模型，在调用时请注意以下说明：",
+  items: [
+    {
+      title: "最高画质支持 Medium（2K）：",
+      description: "xAI 官方底层接口目前仅开放了 Medium（2K 高清）与 Low（1K 极速）两个档位，Medium 即为官方当前最高画质。",
+      type: "warning"
+    },
+    {
+      title: "切勿选择 High（高质量）档位：",
+      description: "因官方未开放 High 档位，选 High 会被官方接口拦截并报错 400 (quality 必须是 low 或 medium)，导致生图任务失败。",
+      type: "error"
+    },
+    {
+      title: "使用建议：",
+      description: "在画布或生图工作台右侧面板中，将画质设为 Medium 即可正常极速出图。",
+      type: "tip"
+    }
+  ],
+  footerNote: "ℹ️ 后续若 xAI 官方开放 High 档位，系统将第一时间解除限制，请留意后续公告。",
+  updatedAt: "2026-09-03T15:30:00.000Z"
+};
+
+export function getSystemNotice(): SystemNoticeConfig {
+  const raw = getSetting("system.notice");
+  if (!raw) {
+    return DEFAULT_NOTICE_CONFIG;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : true,
+      title: typeof parsed.title === "string" ? parsed.title : DEFAULT_NOTICE_CONFIG.title,
+      tag: typeof parsed.tag === "string" ? parsed.tag : DEFAULT_NOTICE_CONFIG.tag,
+      tagColor: typeof parsed.tagColor === "string" ? parsed.tagColor : DEFAULT_NOTICE_CONFIG.tagColor,
+      content: typeof parsed.content === "string" ? parsed.content : DEFAULT_NOTICE_CONFIG.content,
+      items: Array.isArray(parsed.items) ? parsed.items : DEFAULT_NOTICE_CONFIG.items,
+      footerNote: typeof parsed.footerNote === "string" ? parsed.footerNote : DEFAULT_NOTICE_CONFIG.footerNote,
+      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date().toISOString()
+    };
+  } catch {
+    return DEFAULT_NOTICE_CONFIG;
+  }
+}
+
+export function updateSystemNotice(config: Partial<SystemNoticeConfig>): SystemNoticeConfig {
+  const current = getSystemNotice();
+  const updated: SystemNoticeConfig = {
+    enabled: typeof config.enabled === "boolean" ? config.enabled : current.enabled,
+    title: typeof config.title === "string" ? config.title : current.title,
+    tag: typeof config.tag === "string" ? config.tag : current.tag,
+    tagColor: typeof config.tagColor === "string" ? config.tagColor : current.tagColor,
+    content: typeof config.content === "string" ? config.content : current.content,
+    items: Array.isArray(config.items) ? config.items : current.items,
+    footerNote: typeof config.footerNote === "string" ? config.footerNote : current.footerNote,
+    updatedAt: new Date().toISOString()
+  };
+  setSetting("system.notice", JSON.stringify(updated));
+  return updated;
+}
+
 export interface AiConfigData {
   baseUrl: string;
   apiKey: string;

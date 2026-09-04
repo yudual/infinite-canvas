@@ -223,6 +223,7 @@ export function AdminUserTable({
                 }}
                 className="border border-stone-200/80 rounded-lg overflow-hidden dark:border-stone-800"
                 size="middle"
+                scroll={{ x: "max-content" }}
             />
 
             <AdminUserModal

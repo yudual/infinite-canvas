@@ -205,6 +205,7 @@ export function AdminProjectsPanel() {
                         void loadProjects(p, l, search);
                     },
                 }}
+                scroll={{ x: "max-content" }}
             />
         </div>
     );

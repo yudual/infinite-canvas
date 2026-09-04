@@ -1,7 +1,7 @@
 import { memo, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { App, Empty, Input, Popconfirm, Select, Spin, Tag } from "antd";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Check, ChevronRight, Download, Eye, FileText, Image as ImageIcon, ListChecks, Music2, Plus, Search, Settings2, Square, Trash2, Type, Video } from "lucide-react";
+import { BookOpen, Check, ChevronRight, Download, Eye, FileText, Image as ImageIcon, ListChecks, Music2, Plus, Search, Settings2, Square, Trash2, Type, Video, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
@@ -58,6 +58,7 @@ export function CanvasSidePanel({ nodes, selectedNodeIds, onFocusNode, onPreview
     const panelOpen = useCanvasSidePanelStore((state) => state.panelOpen);
     const panelMounted = useCanvasSidePanelStore((state) => state.panelMounted);
     const panelClosing = useCanvasSidePanelStore((state) => state.panelClosing);
+    const closePanel = useCanvasSidePanelStore((state) => state.closePanel);
     const setWidth = useCanvasSidePanelStore((state) => state.setWidth);
     const [resizing, setResizing] = useState(false);
 
@@ -84,26 +85,45 @@ export function CanvasSidePanel({ nodes, selectedNodeIds, onFocusNode, onPreview
     if (!panelMounted) return null;
 
     return (
-        <motion.div
-            className="relative z-[60] flex h-full shrink-0"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: panelOpen ? width + 1 : 0, opacity: panelOpen ? 1 : 0 }}
-            transition={{ duration: resizing ? 0 : PANEL_MOTION_SECONDS, ease: PANEL_EASE }}
-            style={{ overflow: "clip", pointerEvents: panelClosing ? "none" : undefined }}
-        >
-            <motion.aside
-                className="relative flex h-full shrink-0 flex-col overflow-hidden border-r"
-                initial={{ x: -48 }}
-                animate={{ x: panelClosing ? -28 : 0 }}
+        <>
+            {panelOpen ? (
+                <div
+                    className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-xs md:hidden"
+                    onClick={closePanel}
+                />
+            ) : null}
+            <motion.div
+                className="fixed inset-y-0 left-0 z-[60] md:relative flex h-full shrink-0 shadow-2xl md:shadow-none"
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: panelOpen ? width + 1 : 0, opacity: panelOpen ? 1 : 0 }}
                 transition={{ duration: resizing ? 0 : PANEL_MOTION_SECONDS, ease: PANEL_EASE }}
-                style={{ width, background: theme.toolbar.panel, borderColor: theme.toolbar.border, color: theme.node.text }}
-                data-canvas-no-zoom
+                style={{ overflow: "clip", pointerEvents: panelClosing ? "none" : undefined }}
             >
-                <div className="flex items-center gap-5 px-4 pt-3.5">
-                    <TabButton label={t("canvas.sidePanel.canvas")} active={tab === "canvas"} theme={theme} onClick={() => setTab("canvas")} />
-                    <TabButton label={t("canvas.sidePanel.assets")} active={tab === "assets"} theme={theme} onClick={() => setTab("assets")} />
-                    <TabButton label={t("canvas.sidePanel.prompts")} active={tab === "prompts"} theme={theme} onClick={() => setTab("prompts")} />
-                </div>
+                <motion.aside
+                    className="relative flex h-full shrink-0 flex-col overflow-hidden border-r"
+                    initial={{ x: -48 }}
+                    animate={{ x: panelClosing ? -28 : 0 }}
+                    transition={{ duration: resizing ? 0 : PANEL_MOTION_SECONDS, ease: PANEL_EASE }}
+                    style={{ width, background: theme.toolbar.panel, borderColor: theme.toolbar.border, color: theme.node.text }}
+                    data-canvas-no-zoom
+                >
+                    <div className="flex items-center justify-between px-4 pt-3.5">
+                        <div className="flex items-center gap-4 sm:gap-5">
+                            <TabButton label={t("canvas.sidePanel.canvas")} active={tab === "canvas"} theme={theme} onClick={() => setTab("canvas")} />
+                            <TabButton label={t("canvas.sidePanel.assets")} active={tab === "assets"} theme={theme} onClick={() => setTab("assets")} />
+                            <TabButton label={t("canvas.sidePanel.prompts")} active={tab === "prompts"} theme={theme} onClick={() => setTab("prompts")} />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={closePanel}
+                            className="grid size-7 place-items-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/10"
+                            style={{ color: theme.node.muted }}
+                            aria-label={t("common.close")}
+                            title={t("common.close")}
+                        >
+                            <X className="size-4" />
+                        </button>
+                    </div>
                 <div className="mt-2 min-h-0 flex-1 overflow-hidden">
                     {tab === "canvas" ? (
                         <CanvasNodesTab nodes={nodes} selectedNodeIds={selectedNodeIds} onFocusNode={onFocusNode} onPreviewNode={onPreviewNode} theme={theme} />
@@ -116,6 +136,7 @@ export function CanvasSidePanel({ nodes, selectedNodeIds, onFocusNode, onPreview
                 <button type="button" className="absolute inset-y-0 right-0 z-40 w-4 translate-x-1/2 cursor-col-resize" onPointerDown={startResize} aria-label={t("canvas.sidePanel.resize")} />
             </motion.aside>
         </motion.div>
+        </>
     );
 }
 

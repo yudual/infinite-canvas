@@ -2,6 +2,7 @@ import path from "node:path";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import { PORT, UPLOADS_DIR, NODE_ENV } from "./config.js";
+import { getSystemNotice } from "./db.js";
 import { setupRouter } from "./routes/setup.js";
 import { authRouter } from "./routes/auth.js";
 import { adminRouter } from "./routes/admin.js";
@@ -29,6 +30,12 @@ app.use("/api/ai", aiRouter);
 app.use("/api/projects", projectsRouter);
 app.use("/api/assets", assetsRouter);
 app.use("/api/upload", assetsRouter); // Alias for convenient uploads
+
+// Public System Announcement endpoint
+app.get("/api/notice", (_req: Request, res: Response) => {
+  const notice = getSystemNotice();
+  res.json({ success: true, notice });
+});
 
 // Health check endpoint
 app.get("/api/health", (_req: Request, res: Response) => {

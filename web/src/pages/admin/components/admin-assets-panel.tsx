@@ -271,6 +271,7 @@ export function AdminAssetsPanel() {
                         void loadData(p, l, search);
                     },
                 }}
+                scroll={{ x: "max-content" }}
             />
         </div>
     );

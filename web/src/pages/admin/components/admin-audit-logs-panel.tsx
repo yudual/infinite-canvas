@@ -226,6 +226,7 @@ export function AdminAuditLogsPanel() {
                         void loadLogs(p, l, statusFilter, typeFilter, search);
                     },
                 }}
+                scroll={{ x: "max-content" }}
             />
 
             <Drawer

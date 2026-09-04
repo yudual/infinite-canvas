@@ -38,13 +38,13 @@ export function UserStatusActions({ showConfig = true, variant = "default", onOp
     const languageLabel = t("topNav.switchLanguage", { language: t(nextLocale === "zh-CN" ? "locale.zhCN" : "locale.enUS") });
 
     return (
-        <div className="inline-flex shrink-0 items-center gap-1">
+        <div className="inline-flex shrink-0 items-center gap-0.5 sm:gap-1">
             {onOpenPlugins ? (
-                <button type="button" className={naturalIconClass} style={iconStyle} onClick={onOpenPlugins} aria-label={t("topNav.plugins")} title={t("topNav.plugins")}>
+                <button type="button" className={`hidden sm:inline-flex ${naturalIconClass}`} style={iconStyle} onClick={onOpenPlugins} aria-label={t("topNav.plugins")} title={t("topNav.plugins")}>
                     <Puzzle className="size-4" />
                 </button>
             ) : null}
-            <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className={naturalIconClass} style={iconStyle} aria-label={t("topNav.docs")} title={t("topNav.docs")}>
+            <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className={`hidden sm:inline-flex ${naturalIconClass}`} style={iconStyle} aria-label={t("topNav.docs")} title={t("topNav.docs")}>
                 <BookOpen className="size-4" />
             </a>
             {showConfig ? (
@@ -58,14 +58,16 @@ export function UserStatusActions({ showConfig = true, variant = "default", onOp
                 </button>
             </Tooltip>
             <AnimatedThemeToggler theme={theme} onThemeChange={setTheme} className={naturalIconClass} style={iconStyle} aria-label={t(theme === "dark" ? "topNav.lightTheme" : "topNav.darkTheme")} title={t(theme === "dark" ? "topNav.lightTheme" : "topNav.darkTheme")} />
-            <VersionReleaseModal style={versionStyle} />
-            <GitHubLink className={cn("bg-transparent hover:bg-transparent dark:hover:bg-transparent", gitHubClassName)} style={gitHubStyle} />
+            <span className="hidden sm:inline-flex">
+                <VersionReleaseModal style={versionStyle} />
+            </span>
+            <GitHubLink className={cn("hidden sm:inline-flex bg-transparent hover:bg-transparent dark:hover:bg-transparent", gitHubClassName)} style={gitHubStyle} />
             {onOpenShortcuts ? (
-                <button type="button" className={naturalIconClass} style={iconStyle} onClick={onOpenShortcuts} aria-label={t("topNav.shortcuts")} title={t("topNav.shortcuts")}>
+                <button type="button" className={`hidden sm:inline-flex ${naturalIconClass}`} style={iconStyle} onClick={onOpenShortcuts} aria-label={t("topNav.shortcuts")} title={t("topNav.shortcuts")}>
                     <Keyboard className="size-4" />
                 </button>
             ) : null}
-            <div className="ml-1 pl-1 border-l border-stone-200 dark:border-stone-800">
+            <div className="ml-0.5 sm:ml-1 pl-0.5 sm:pl-1 border-l border-stone-200 dark:border-stone-800">
                 <UserProfileDropdown onOpenProjects={onOpenProjects} />
             </div>
         </div>

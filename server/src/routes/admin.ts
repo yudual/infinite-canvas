@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
-import { db, toSafeUser, getAiConfig, maskApiKey, updateAiConfig, type UserRecord } from "../db.js";
+import { db, toSafeUser, getAiConfig, maskApiKey, updateAiConfig, getSystemNotice, updateSystemNotice, type UserRecord } from "../db.js";
 import { authenticateToken, requireAdmin } from "../middleware/auth.js";
 import { channelsAdminRouter } from "./admin/channels.js";
 import { assetsAdminRouter } from "./admin/assets.js";
@@ -527,4 +527,45 @@ adminRouter.get("/stats", (_req: Request, res: Response) => {
     storageBytes: assetRow?.totalBytes ?? 0,
   });
 });
+
+// ==========================================
+// 4. System Announcement Endpoints
+// ==========================================
+
+// GET /api/admin/notice
+adminRouter.get("/notice", (_req: Request, res: Response) => {
+  const notice = getSystemNotice();
+  res.json({ success: true, notice });
+});
+
+// PUT /api/admin/notice
+adminRouter.put("/notice", (req: Request, res: Response) => {
+  const { enabled, title, tag, tagColor, content, items, footerNote } = req.body || {};
+
+  if (title !== undefined && (typeof title !== "string" || !title.trim())) {
+    res.status(400).json({
+      success: false,
+      error: { code: "INVALID_TITLE", message: "公告标题不能为空" },
+      message: "公告标题不能为空",
+    });
+    return;
+  }
+
+  const updated = updateSystemNotice({
+    enabled: typeof enabled === "boolean" ? enabled : undefined,
+    title: typeof title === "string" ? title.trim() : undefined,
+    tag: typeof tag === "string" ? tag.trim() : undefined,
+    tagColor: typeof tagColor === "string" ? tagColor.trim() : undefined,
+    content: typeof content === "string" ? content.trim() : undefined,
+    items: Array.isArray(items) ? items : undefined,
+    footerNote: typeof footerNote === "string" ? footerNote.trim() : undefined,
+  });
+
+  res.json({
+    success: true,
+    notice: updated,
+    message: "系统公告配置已保存",
+  });
+});
+
 

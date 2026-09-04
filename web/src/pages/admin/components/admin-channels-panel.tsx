@@ -316,6 +316,7 @@ export function AdminChannelsPanel() {
                         void loadChannels(p, l, search);
                     },
                 }}
+                scroll={{ x: "max-content" }}
             />
 
             <AdminChannelModal

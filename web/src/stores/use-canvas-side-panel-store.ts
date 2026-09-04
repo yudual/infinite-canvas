@@ -10,13 +10,16 @@ const OPEN_KEY = "canvas-side-panel-open";
 
 function initialWidth() {
     if (typeof window === "undefined") return CANVAS_SIDE_PANEL_DEFAULT_WIDTH;
+    const isMobile = window.innerWidth < 768;
+    const maxWidth = isMobile ? Math.min(CANVAS_SIDE_PANEL_MAX_WIDTH, window.innerWidth - 48) : CANVAS_SIDE_PANEL_MAX_WIDTH;
     const stored = Number(localStorage.getItem(WIDTH_KEY));
-    if (!stored) return CANVAS_SIDE_PANEL_DEFAULT_WIDTH;
-    return Math.min(CANVAS_SIDE_PANEL_MAX_WIDTH, Math.max(CANVAS_SIDE_PANEL_MIN_WIDTH, stored));
+    if (!stored) return Math.min(CANVAS_SIDE_PANEL_DEFAULT_WIDTH, maxWidth);
+    return Math.min(maxWidth, Math.max(CANVAS_SIDE_PANEL_MIN_WIDTH, stored));
 }
 
 function initialOpen() {
     if (typeof window === "undefined") return true;
+    if (window.innerWidth < 768) return false;
     return localStorage.getItem(OPEN_KEY) !== "0";
 }
 

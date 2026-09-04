@@ -32,6 +32,15 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
     const scaleRef = useRef(viewport.k);
     const frameRef = useRef<number | null>(null);
     const nextViewportRef = useRef<ViewportTransform | null>(null);
+    const touchPointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+    const pinchStateRef = useRef<{
+        initialDist: number;
+        initialScale: number;
+        initialViewportX: number;
+        initialViewportY: number;
+        midX: number;
+        midY: number;
+    } | null>(null);
     const [isSpacePressed, setIsSpacePressed] = useState(false);
     const [isControlPressed, setIsControlPressed] = useState(false);
     const [isPanning, setIsPanning] = useState(false);
@@ -71,6 +80,8 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
             setIsControlPressed(false);
             panState.current.isPanning = false;
             setIsPanning(false);
+            touchPointersRef.current.clear();
+            pinchStateRef.current = null;
             document.body.style.cursor = "";
         };
 
@@ -107,17 +118,43 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
     };
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        const isTouch = event.pointerType === "touch";
+        if (isTouch) {
+            touchPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            if (touchPointersRef.current.size === 2) {
+                const pointers = Array.from(touchPointersRef.current.values());
+                const p1 = pointers[0];
+                const p2 = pointers[1];
+                const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
+                pinchStateRef.current = {
+                    initialDist: dist,
+                    initialScale: viewport.k,
+                    initialViewportX: viewport.x,
+                    initialViewportY: viewport.y,
+                    midX,
+                    midY,
+                };
+                panState.current.isPanning = false;
+                setIsPanning(false);
+                return;
+            }
+        }
+
         const target = event.target instanceof Element ? event.target : null;
         if (target?.closest("[data-canvas-no-zoom]")) return;
         if (target?.closest("[data-connection-create-menu]")) return;
         const isBackgroundClick = !target?.closest("[data-node-id],[data-connection-id]");
         const temporaryTool = event.ctrlKey || isSpacePressed;
         const activeTool = temporaryTool ? (tool === "select" ? "pan" : "select") : tool;
-        const shouldPan = event.button === 1 || (event.button === 0 && activeTool === "pan" && isBackgroundClick);
+        const shouldPan = event.button === 1 || ((event.button === 0 || isTouch) && (activeTool === "pan" || isTouch) && isBackgroundClick);
 
         if (shouldPan) {
             event.preventDefault();
-            event.currentTarget.setPointerCapture(event.pointerId);
+            try {
+                event.currentTarget.setPointerCapture(event.pointerId);
+            } catch {}
             panState.current = {
                 isPanning: true,
                 startX: event.clientX,
@@ -134,7 +171,9 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
 
         if (event.button === 0 && isBackgroundClick) {
             event.preventDefault();
-            event.currentTarget.setPointerCapture(event.pointerId);
+            try {
+                event.currentTarget.setPointerCapture(event.pointerId);
+            } catch {}
             onCanvasMouseDown?.(event);
         }
     };
@@ -147,6 +186,44 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
 
     useEffect(() => {
         const handlePointerMove = (event: PointerEvent) => {
+            if (event.pointerType === "touch" && touchPointersRef.current.has(event.pointerId)) {
+                touchPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                if (touchPointersRef.current.size === 2 && pinchStateRef.current) {
+                    const pointers = Array.from(touchPointersRef.current.values());
+                    const p1 = pointers[0];
+                    const p2 = pointers[1];
+                    const currentDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                    const currentMidX = (p1.x + p2.x) / 2;
+                    const currentMidY = (p1.y + p2.y) / 2;
+                    const rect = containerRef.current?.getBoundingClientRect();
+                    if (rect && pinchStateRef.current.initialDist > 0) {
+                        const scaleRatio = currentDist / pinchStateRef.current.initialDist;
+                        const newScale = Math.min(Math.max(pinchStateRef.current.initialScale * scaleRatio, 0.05), 5);
+
+                        const initialMidClientX = pinchStateRef.current.midX - rect.left;
+                        const initialMidClientY = pinchStateRef.current.midY - rect.top;
+                        const worldX = (initialMidClientX - pinchStateRef.current.initialViewportX) / pinchStateRef.current.initialScale;
+                        const worldY = (initialMidClientY - pinchStateRef.current.initialViewportY) / pinchStateRef.current.initialScale;
+
+                        const midDeltaX = currentMidX - pinchStateRef.current.midX;
+                        const midDeltaY = currentMidY - pinchStateRef.current.midY;
+
+                        nextViewportRef.current = {
+                            x: initialMidClientX - worldX * newScale + midDeltaX,
+                            y: initialMidClientY - worldY * newScale + midDeltaY,
+                            k: newScale,
+                        };
+                        if (!frameRef.current) {
+                            frameRef.current = requestAnimationFrame(() => {
+                                frameRef.current = null;
+                                if (nextViewportRef.current) onViewportChange(nextViewportRef.current);
+                            });
+                        }
+                    }
+                    return;
+                }
+            }
+
             if (!panState.current.isPanning) return;
 
             const dx = event.clientX - panState.current.startX;
@@ -167,7 +244,16 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
             });
         };
 
-        const handlePointerUp = () => {
+        const handlePointerUp = (event?: PointerEvent) => {
+            if (event?.pointerId) {
+                touchPointersRef.current.delete(event.pointerId);
+            } else {
+                touchPointersRef.current.clear();
+            }
+            if (touchPointersRef.current.size < 2) {
+                pinchStateRef.current = null;
+            }
+
             if (!panState.current.isPanning) return;
 
             if (!panState.current.hasMoved && panState.current.startedOnBackground) {
@@ -187,7 +273,7 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
             window.removeEventListener("pointercancel", handlePointerUp);
             document.body.style.cursor = "";
         };
-    }, [onCanvasDeselect, onViewportChange]);
+    }, [containerRef, onCanvasDeselect, onViewportChange]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -210,7 +296,7 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
     return (
         <div
             ref={containerRef}
-            className="relative h-full w-full select-none overflow-hidden"
+            className="relative h-full w-full select-none overflow-hidden touch-none"
             style={{ background: theme.canvas.background, cursor }}
             onPointerDown={handlePointerDown}
             onDoubleClick={handleDoubleClick}

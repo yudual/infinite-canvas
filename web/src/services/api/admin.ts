@@ -444,3 +444,41 @@ export async function getAdminAuditLogById(id: string): Promise<{ success: boole
     const { data } = await apiClient.get<{ success: boolean; log: AdminAuditLogItem }>(`/admin/audit-logs/${id}`);
     return data;
 }
+
+// ==========================================
+// System Announcement API
+// ==========================================
+
+export type NoticeItem = {
+    id?: string;
+    title: string;
+    description: string;
+    type: "info" | "warning" | "tip" | "error";
+};
+
+export type SystemNoticeConfig = {
+    enabled: boolean;
+    title: string;
+    tag: string;
+    tagColor: string;
+    content: string;
+    items: NoticeItem[];
+    footerNote: string;
+    updatedAt: string;
+};
+
+export async function getAdminNotice(): Promise<{ success: boolean; notice: SystemNoticeConfig }> {
+    const { data } = await apiClient.get<{ success: boolean; notice: SystemNoticeConfig }>("/admin/notice");
+    return data;
+}
+
+export async function updateAdminNotice(config: Partial<SystemNoticeConfig>): Promise<{ success: boolean; notice: SystemNoticeConfig; message: string }> {
+    const { data } = await apiClient.put<{ success: boolean; notice: SystemNoticeConfig; message: string }>("/admin/notice", config);
+    return data;
+}
+
+export async function getPublicNotice(): Promise<{ success: boolean; notice: SystemNoticeConfig }> {
+    const { data } = await apiClient.get<{ success: boolean; notice: SystemNoticeConfig }>("/notice");
+    return data;
+}
+
