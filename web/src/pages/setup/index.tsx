@@ -44,7 +44,7 @@ export default function SetupPage() {
                         <Sparkles className="size-6" />
                     </div>
                     <h1 className="text-2xl font-bold tracking-tight text-stone-950 dark:text-stone-100">初始化系统配置</h1>
-                    <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">检测到系统首次运行，请创建首个超级管理员账户以开启 Infinite Canvas</p>
+                    <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">检测到系统首次运行，请创建首个超级管理员账户以开启 Yu-canvas</p>
                 </div>
 
                 <Form layout="vertical" onFinish={handleSubmit} requiredMark={false} size="large">

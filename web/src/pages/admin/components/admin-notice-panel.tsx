@@ -98,7 +98,7 @@ const NOTICE_TEMPLATES: Record<string, { label: string; data: Partial<SystemNoti
         label: "版本更新 / 移动端与手势支持上线模板",
         data: {
             enabled: true,
-            title: "无限画布移动端触控优化与公告自设系统全新上线！",
+            title: "Yu-canvas 移动端触控优化与公告自设系统全新上线！",
             tag: "功能发布",
             tagColor: "green",
             content: "平台已全面升级移动端操控与系统配置体系，核心更新亮点如下：",
@@ -126,10 +126,10 @@ const NOTICE_TEMPLATES: Record<string, { label: string; data: Partial<SystemNoti
         label: "社区交流 / 使用指南模板",
         data: {
             enabled: true,
-            title: "欢迎加入 Infinite Canvas 创作者交流群与使用指南",
+            title: "欢迎加入 Yu-canvas 创作者交流群与使用指南",
             tag: "社区指南",
             tagColor: "blue",
-            content: "欢迎各位设计师与创作者使用 Infinite Canvas 无限画布，探索 AI 视听生成的无限创意边界！",
+            content: "欢迎各位设计师与创作者使用 Yu-canvas 无限画布，探索 AI 视听生成的无限创意边界！",
             items: [
                 {
                     title: "官方使用文档：",

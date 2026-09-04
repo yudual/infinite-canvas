@@ -61,7 +61,7 @@ export default function LoginPage() {
                             WebkitMask: "url(/logo.svg) center / contain no-repeat",
                         }}
                     />
-                    <h1 className="text-2xl font-bold tracking-tight text-stone-950 dark:text-stone-100">登录 Infinite Canvas</h1>
+                    <h1 className="text-2xl font-bold tracking-tight text-stone-950 dark:text-stone-100">登录 Yu-canvas</h1>
                     <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">欢迎回来，请登录您的工作台账户</p>
                 </div>
 

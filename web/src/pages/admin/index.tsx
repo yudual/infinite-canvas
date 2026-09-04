@@ -178,7 +178,7 @@ export default function AdminPage() {
                             }}
                         />
                         <div className="flex items-center gap-2">
-                            <span className="text-base font-semibold tracking-tight hidden sm:inline">Infinite Canvas</span>
+                            <span className="text-base font-semibold tracking-tight hidden sm:inline">Yu-canvas</span>
                             <span
                                 className="inline-flex items-center gap-1 rounded-md px-1.5 sm:px-2 py-0.5 text-xs font-medium"
                                 style={{

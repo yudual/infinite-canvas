@@ -83,7 +83,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[Infinite Canvas Server] Running on http://0.0.0.0:${PORT} (${NODE_ENV})`);
+  console.log(`[Yu-canvas Server] Running on http://0.0.0.0:${PORT} (${NODE_ENV})`);
 });
 
 export default app;
