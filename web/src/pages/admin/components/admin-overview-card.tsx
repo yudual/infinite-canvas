@@ -1,15 +1,18 @@
-import { Card, Button, Spin, Statistic } from "antd";
-import { Users, UserCheck, FolderKanban, Image as ImageIcon, HardDrive, RotateCw } from "lucide-react";
+import { Card, Button, Spin, Statistic, Tag } from "antd";
+import { Users, UserCheck, FolderKanban, Image as ImageIcon, HardDrive, RotateCw, Megaphone } from "lucide-react";
 import type { SystemStats } from "@/services/api/admin";
 import { formatBytes } from "@/lib/image-utils";
+import { useNoticeStore } from "@/stores/use-notice-store";
 
 type AdminOverviewCardProps = {
     stats: SystemStats | null;
     loading: boolean;
     onRefresh: () => void;
+    onSwitchTab?: (tabKey: string) => void;
 };
 
-export function AdminOverviewCard({ stats, loading, onRefresh }: AdminOverviewCardProps) {
+export function AdminOverviewCard({ stats, loading, onRefresh, onSwitchTab }: AdminOverviewCardProps) {
+    const notice = useNoticeStore((state) => state.notice);
     const cards = [
         {
             title: "总用户数",
@@ -89,6 +92,29 @@ export function AdminOverviewCard({ stats, loading, onRefresh }: AdminOverviewCa
                     ))}
                 </div>
             )}
+
+            {/* System Announcement Status Card */}
+            <div className="rounded-xl border border-stone-200 bg-card p-4 shadow-sm dark:border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                        <Megaphone className="size-5" />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-stone-900 dark:text-stone-100">全站系统公告状态</span>
+                            <Tag color={notice?.enabled ? "green" : "default"} className="!m-0">
+                                {notice?.enabled ? "已开启生效中" : "已停用"}
+                            </Tag>
+                        </div>
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 truncate">
+                            当前公告：{notice?.title || "未配置公告内容"}
+                        </p>
+                    </div>
+                </div>
+                <Button type="primary" ghost size="small" className="shrink-0" onClick={() => onSwitchTab?.("notice")}>
+                    前往配置公告
+                </Button>
+            </div>
         </div>
     );
 }

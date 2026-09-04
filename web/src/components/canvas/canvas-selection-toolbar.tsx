@@ -37,6 +37,11 @@ export function CanvasSelectionToolbar({
     const width = (bounds.right - bounds.left) * viewport.k + SELECTION_PAD * 2;
     const height = (bounds.bottom - bounds.top) * viewport.k + SELECTION_PAD * 2;
     const showActions = showToolbar && (canGroup || canUngroup);
+    const rawLeft = left + width / 2;
+    const rawTop = top - 8;
+    const isFlipped = rawTop < 72;
+    const actionTop = isFlipped ? top + height + 8 : rawTop;
+    const actionLeft = Math.max(16, Math.min(typeof window !== "undefined" ? window.innerWidth - 16 : 800, rawLeft));
 
     return (
         <>
@@ -58,8 +63,8 @@ export function CanvasSelectionToolbar({
             </svg>
             {showActions ? (
                 <div
-                    className="absolute z-[70] flex h-12 -translate-x-1/2 -translate-y-full items-center overflow-visible rounded-[18px] border border-black/10 bg-white text-[15px] text-[#242529] shadow-[0_8px_28px_rgba(15,23,42,.12)]"
-                    style={{ left: left + width / 2, top: top - 8 }}
+                    className={`absolute z-[70] flex h-12 -translate-x-1/2 ${isFlipped ? "translate-y-0" : "-translate-y-full"} max-w-[calc(100vw-24px)] items-center overflow-x-auto thin-scrollbar rounded-[18px] border border-black/10 bg-white text-[15px] text-[#242529] shadow-[0_8px_28px_rgba(15,23,42,.12)] px-1.5`}
+                    style={{ left: actionLeft, top: actionTop }}
                     onMouseDown={(event) => event.stopPropagation()}
                     onPointerDown={(event) => event.stopPropagation()}
                 >

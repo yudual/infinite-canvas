@@ -477,6 +477,11 @@ export async function updateAdminNotice(config: Partial<SystemNoticeConfig>): Pr
     return data;
 }
 
+export async function resetAdminNotice(): Promise<{ success: boolean; notice: SystemNoticeConfig; message: string }> {
+    const { data } = await apiClient.post<{ success: boolean; notice: SystemNoticeConfig; message: string }>("/admin/notice/reset");
+    return data;
+}
+
 export async function getPublicNotice(): Promise<{ success: boolean; notice: SystemNoticeConfig }> {
     const { data } = await apiClient.get<{ success: boolean; notice: SystemNoticeConfig }>("/notice");
     return data;

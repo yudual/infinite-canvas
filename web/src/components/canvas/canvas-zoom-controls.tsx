@@ -56,7 +56,14 @@ export function CanvasZoomControls({ scale, onScaleChange, onReset, isMiniMapOpe
                     {Math.round(scale * 100)}%
                 </span>
                 <Tooltip title={t("canvas.shortcuts")}>
-                    <Button type="text" className="!h-7 !w-7 sm:!h-8 sm:!w-8 !min-w-7 sm:!min-w-8 !p-0" style={shortcutsOpen ? activeStyle : { color: theme.toolbar.item }} icon={<HelpCircle className="size-3.5 sm:size-4" />} onClick={() => setShortcutsOpen(true)} aria-label={t("canvas.shortcuts")} />
+                    <Button
+                        type="text"
+                        className="hidden sm:inline-flex !h-7 !w-7 sm:!h-8 sm:!w-8 !min-w-7 sm:!min-w-8 !p-0"
+                        style={shortcutsOpen ? activeStyle : { color: theme.toolbar.item }}
+                        icon={<HelpCircle className="size-3.5 sm:size-4" />}
+                        onClick={() => setShortcutsOpen(true)}
+                        aria-label={t("canvas.shortcuts")}
+                    />
                 </Tooltip>
             </div>
             <Modal title={t("canvas.shortcuts")} open={shortcutsOpen} onCancel={() => setShortcutsOpen(false)} footer={null} centered>

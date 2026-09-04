@@ -1354,6 +1354,44 @@ function InfiniteCanvasPage() {
 
     const handleGlobalPointerMove = useCallback(
         (event: PointerEvent) => {
+            const currentViewport = viewportRef.current;
+
+            if (dragRef.current.isDraggingNode) {
+                const dx = (event.clientX - dragRef.current.startX) / currentViewport.k;
+                const dy = (event.clientY - dragRef.current.startY) / currentViewport.k;
+                const initialPositions = dragRef.current.initialSelectedNodes;
+                if (Math.abs(event.clientX - dragRef.current.startX) > 3 || Math.abs(event.clientY - dragRef.current.startY) > 3) {
+                    dragRef.current.hasMoved = true;
+                }
+
+                const movedIds = new Set(initialPositions.map((item) => item.id));
+                const previewNodes = nodesRef.current.map((node) => {
+                    const initial = initialPositions.find((item) => item.id === node.id);
+                    return initial ? { ...node, position: { x: initial.x + dx, y: initial.y + dy } } : node;
+                });
+                setDropTargetGroupId(findGroupDropTarget(movedIds, previewNodes)?.id || null);
+
+                if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                rafRef.current = requestAnimationFrame(() => {
+                    setNodes((prev) =>
+                        prev.map((node) => {
+                            const initial = initialPositions.find((item) => item.id === node.id);
+                            return initial ? { ...node, position: { x: initial.x + dx, y: initial.y + dy } } : node;
+                        }),
+                    );
+                    rafRef.current = null;
+                });
+                return;
+            }
+
+            if (connectingParamsRef.current && !pendingConnectionCreateRef.current) {
+                const dropTarget = getConnectionDropTarget(event.clientX, event.clientY, connectingParamsRef.current);
+                connectionTargetNodeIdRef.current = dropTarget.nodeId;
+                setConnectionTargetNodeId(dropTarget.nodeId);
+                setMouseWorld(screenToCanvas(event.clientX, event.clientY));
+                return;
+            }
+
             const currentSelection = selectionBoxRef.current;
             if (!currentSelection) return;
 
@@ -1382,11 +1420,11 @@ function InfiniteCanvasPage() {
             setSelectionBox(nextSelectionBox);
             setSelectedNodeIds(nextSelected);
         },
-        [screenToCanvas],
+        [getConnectionDropTarget, screenToCanvas],
     );
 
     const handleGlobalMouseUp = useCallback(
-        (event: MouseEvent) => {
+        (event: MouseEvent | PointerEvent) => {
             finishNodeDrag(event.clientX, event.clientY);
 
             selectionBoxRef.current = null;
@@ -1412,7 +1450,7 @@ function InfiniteCanvasPage() {
     );
 
     useEffect(() => {
-        const handlePointerUp = (event: PointerEvent) => finishNodeDrag(event.clientX, event.clientY);
+        const handlePointerUp = (event: PointerEvent) => handleGlobalMouseUp(event);
         const cancelNodeDrag = () => finishNodeDrag();
         window.addEventListener("mousemove", handleGlobalMouseMove);
         window.addEventListener("mouseup", handleGlobalMouseUp);

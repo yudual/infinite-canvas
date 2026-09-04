@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
-import { db, toSafeUser, getAiConfig, maskApiKey, updateAiConfig, getSystemNotice, updateSystemNotice, type UserRecord } from "../db.js";
+import { db, toSafeUser, getAiConfig, maskApiKey, updateAiConfig, getSystemNotice, updateSystemNotice, resetSystemNotice, type UserRecord, type NoticeItem } from "../db.js";
 import { authenticateToken, requireAdmin } from "../middleware/auth.js";
 import { channelsAdminRouter } from "./admin/channels.js";
 import { assetsAdminRouter } from "./admin/assets.js";
@@ -551,13 +551,24 @@ adminRouter.put("/notice", (req: Request, res: Response) => {
     return;
   }
 
+  let sanitizedItems: NoticeItem[] | undefined;
+  if (Array.isArray(items)) {
+    sanitizedItems = items
+      .filter((item) => item && typeof item === "object")
+      .map((item) => ({
+        title: typeof item.title === "string" ? item.title.trim() : "",
+        description: typeof item.description === "string" ? item.description.trim() : "",
+        type: ["info", "warning", "tip", "error"].includes(item.type) ? item.type : "info",
+      }));
+  }
+
   const updated = updateSystemNotice({
     enabled: typeof enabled === "boolean" ? enabled : undefined,
     title: typeof title === "string" ? title.trim() : undefined,
     tag: typeof tag === "string" ? tag.trim() : undefined,
     tagColor: typeof tagColor === "string" ? tagColor.trim() : undefined,
     content: typeof content === "string" ? content.trim() : undefined,
-    items: Array.isArray(items) ? items : undefined,
+    items: sanitizedItems,
     footerNote: typeof footerNote === "string" ? footerNote.trim() : undefined,
   });
 
@@ -565,6 +576,16 @@ adminRouter.put("/notice", (req: Request, res: Response) => {
     success: true,
     notice: updated,
     message: "系统公告配置已保存",
+  });
+});
+
+// POST /api/admin/notice/reset
+adminRouter.post("/notice/reset", (_req: Request, res: Response) => {
+  const notice = resetSystemNotice();
+  res.json({
+    success: true,
+    notice,
+    message: "系统公告已重置为初始默认配置",
   });
 });
 

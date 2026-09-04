@@ -107,8 +107,11 @@ export function CanvasNodeHoverToolbar({
     if (!node) return null;
 
     const activeNode = node;
-    const left = viewport.x + (node.position.x + node.width / 2) * viewport.k;
-    const top = viewport.y + node.position.y * viewport.k - 14;
+    const rawLeft = viewport.x + (node.position.x + node.width / 2) * viewport.k;
+    const rawTop = viewport.y + node.position.y * viewport.k - 14;
+    const isFlipped = rawTop < 72;
+    const top = isFlipped ? viewport.y + (node.position.y + node.height) * viewport.k + 14 : rawTop;
+    const left = Math.max(16, Math.min(typeof window !== "undefined" ? window.innerWidth - 16 : 800, rawLeft));
     const isImage = node.type === CanvasNodeType.Image;
     const isVideo = node.type === CanvasNodeType.Video;
     const isAudio = node.type === CanvasNodeType.Audio;
@@ -185,7 +188,7 @@ export function CanvasNodeHoverToolbar({
     return (
         <>
             <div
-                className="absolute z-[70] flex h-12 -translate-x-1/2 -translate-y-full items-center overflow-visible rounded-[18px] border border-black/10 bg-white text-[15px] text-[#242529] shadow-[0_8px_28px_rgba(15,23,42,.12)]"
+                className={`absolute z-[70] flex h-12 -translate-x-1/2 ${isFlipped ? "translate-y-0" : "-translate-y-full"} max-w-[calc(100vw-24px)] items-center overflow-x-auto thin-scrollbar rounded-[18px] border border-black/10 bg-white text-[15px] text-[#242529] shadow-[0_8px_28px_rgba(15,23,42,.12)] [&>*]:shrink-0 px-1`}
                 style={{ left, top }}
                 onMouseEnter={() => onKeep(node.id)}
                 onMouseLeave={() => {

@@ -4,6 +4,62 @@ import { Megaphone, AlertTriangle, CheckCircle2, Sparkles, Lightbulb, AlertCircl
 import { useTranslation } from "react-i18next";
 import { useNoticeStore } from "@/stores/use-notice-store";
 
+function FormattedNoticeText({ text }: { text: string }) {
+    if (!text) return null;
+    const lines = text.split("\n");
+    return (
+        <div className="space-y-1.5 leading-relaxed">
+            {lines.map((line, idx) => {
+                const trimmed = line.trim();
+                if (!trimmed) return <div key={idx} className="h-1.5" />;
+                const isBullet = trimmed.startsWith("- ") || trimmed.startsWith("• ");
+                const lineContent = isBullet ? trimmed.slice(2) : line;
+
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const parts = lineContent.split(urlRegex);
+
+                const renderedParts = parts.map((part, pIdx) => {
+                    if (part.match(/^https?:\/\//)) {
+                        return (
+                            <a
+                                key={pIdx}
+                                href={part}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:text-blue-600 underline underline-offset-2 break-all"
+                            >
+                                {part}
+                            </a>
+                        );
+                    }
+                    const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
+                    return (
+                        <span key={pIdx}>
+                            {boldParts.map((bp, bIdx) => {
+                                if (bp.startsWith("**") && bp.endsWith("**")) {
+                                    return <strong key={bIdx} className="font-semibold text-stone-900 dark:text-stone-100">{bp.slice(2, -2)}</strong>;
+                                }
+                                return bp;
+                            })}
+                        </span>
+                    );
+                });
+
+                if (isBullet) {
+                    return (
+                        <div key={idx} className="flex items-start gap-1.5 ml-1">
+                            <span className="text-amber-500 text-sm leading-none mt-0.5">•</span>
+                            <span>{renderedParts}</span>
+                        </div>
+                    );
+                }
+
+                return <p key={idx} className="m-0">{renderedParts}</p>;
+            })}
+        </div>
+    );
+}
+
 export function SystemNoticeModal() {
     const { i18n } = useTranslation();
     const open = useNoticeStore((state) => state.open);
@@ -39,7 +95,7 @@ export function SystemNoticeModal() {
                     <span className="flex size-7 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
                         <Megaphone className="size-4" />
                     </span>
-                    <span className="truncate">{notice.tag || (isZh ? "系统公告" : "Announcement")}</span>
+                    <span className="truncate">{isZh ? "全站系统公告" : "System Notice"}</span>
                     {notice.tag && (
                         <Tag color={notice.tagColor || "orange"} className="!ml-1 !font-normal">
                             {notice.tag}
@@ -74,9 +130,9 @@ export function SystemNoticeModal() {
 
                     <div className="mt-3 space-y-2.5 text-xs leading-relaxed">
                         {notice.content && (
-                            <p className="text-stone-600 dark:text-stone-300 whitespace-pre-wrap">
-                                {notice.content}
-                            </p>
+                            <div className="text-stone-600 dark:text-stone-300">
+                                <FormattedNoticeText text={notice.content} />
+                            </div>
                         )}
 
                         {notice.items && notice.items.length > 0 && (
@@ -116,9 +172,9 @@ export function SystemNoticeModal() {
                         )}
 
                         {notice.footerNote && (
-                            <p className="text-[11px] text-stone-400 dark:text-stone-500 whitespace-pre-wrap">
-                                {notice.footerNote}
-                            </p>
+                            <div className="text-[11px] text-stone-400 dark:text-stone-500 pt-1 border-t border-amber-500/10">
+                                <FormattedNoticeText text={notice.footerNote} />
+                            </div>
                         )}
                     </div>
                 </div>

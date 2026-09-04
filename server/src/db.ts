@@ -359,11 +359,20 @@ export function getSystemNotice(): SystemNoticeConfig {
       content: typeof parsed.content === "string" ? parsed.content : DEFAULT_NOTICE_CONFIG.content,
       items: Array.isArray(parsed.items) ? parsed.items : DEFAULT_NOTICE_CONFIG.items,
       footerNote: typeof parsed.footerNote === "string" ? parsed.footerNote : DEFAULT_NOTICE_CONFIG.footerNote,
-      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date().toISOString()
+      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : DEFAULT_NOTICE_CONFIG.updatedAt
     };
   } catch {
     return DEFAULT_NOTICE_CONFIG;
   }
+}
+
+export function resetSystemNotice(): SystemNoticeConfig {
+  const resetConfig: SystemNoticeConfig = {
+    ...DEFAULT_NOTICE_CONFIG,
+    updatedAt: new Date().toISOString()
+  };
+  setSetting("system.notice", JSON.stringify(resetConfig));
+  return resetConfig;
 }
 
 export function updateSystemNotice(config: Partial<SystemNoticeConfig>): SystemNoticeConfig {

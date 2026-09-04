@@ -54,7 +54,7 @@ export const useNoticeStore = create<NoticeStore>((set, get) => ({
         if (dontShowToday && notice) {
             try {
                 const today = getTodayString();
-                localStorage.setItem(NOTICE_STORAGE_KEY, `${today}:${notice.updatedAt || ""}`);
+                localStorage.setItem(NOTICE_STORAGE_KEY, JSON.stringify({ date: today, updatedAt: notice.updatedAt || "" }));
             } catch {}
             set({ hasCheckedToday: true, open: false });
         } else {
@@ -71,10 +71,19 @@ export const useNoticeStore = create<NoticeStore>((set, get) => ({
         const today = getTodayString();
         let isDismissed = false;
         try {
-            const dismissed = localStorage.getItem(NOTICE_STORAGE_KEY);
-            if (dismissed) {
-                const [dismissedDate, dismissedUpdatedAt] = dismissed.split(":");
-                isDismissed = dismissedDate === today && (!notice.updatedAt || dismissedUpdatedAt === notice.updatedAt);
+            const raw = localStorage.getItem(NOTICE_STORAGE_KEY);
+            if (raw) {
+                if (raw.startsWith("{")) {
+                    const parsed = JSON.parse(raw);
+                    isDismissed = parsed.date === today && (!notice.updatedAt || parsed.updatedAt === notice.updatedAt);
+                } else {
+                    const firstColon = raw.indexOf(":");
+                    if (firstColon !== -1) {
+                        const dismissedDate = raw.slice(0, firstColon);
+                        const dismissedUpdatedAt = raw.slice(firstColon + 1);
+                        isDismissed = dismissedDate === today && (!notice.updatedAt || dismissedUpdatedAt === notice.updatedAt);
+                    }
+                }
             }
         } catch {}
 

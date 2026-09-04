@@ -218,7 +218,7 @@ export const CanvasNode = React.memo(function CanvasNode({
     }, [isEditingContent]);
 
     const handleResizeMove = useCallback(
-        (event: MouseEvent) => {
+        (event: MouseEvent | PointerEvent) => {
             if (!resizeRef.current.isResizing) return;
 
             const dx = (event.clientX - resizeRef.current.startX) / scale;
@@ -262,10 +262,14 @@ export const CanvasNode = React.memo(function CanvasNode({
         resizeRef.current.isResizing = false;
         window.removeEventListener("mousemove", handleResizeMove);
         window.removeEventListener("mouseup", handleResizeUp);
+        window.removeEventListener("pointermove", handleResizeMove);
+        window.removeEventListener("pointerup", handleResizeUp);
+        window.removeEventListener("pointercancel", handleResizeUp);
         onResizeEnd(data.id);
     }, [data.id, handleResizeMove, onResizeEnd]);
 
     const handleResizeMouseDown = (event: React.MouseEvent, corner: ResizeCorner) => {
+        if (event.nativeEvent instanceof PointerEvent && event.nativeEvent.pointerType === "touch") return;
         event.stopPropagation();
         event.preventDefault();
         onResizeStart(data.id);
@@ -285,10 +289,37 @@ export const CanvasNode = React.memo(function CanvasNode({
         window.addEventListener("mouseup", handleResizeUp);
     };
 
+    const handleResizePointerDown = (event: React.PointerEvent, corner: ResizeCorner) => {
+        event.stopPropagation();
+        event.preventDefault();
+        try {
+            (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
+        } catch {}
+        onResizeStart(data.id);
+        resizeRef.current = {
+            isResizing: true,
+            corner,
+            startX: event.clientX,
+            startY: event.clientY,
+            startLeft: data.position.x,
+            startTop: data.position.y,
+            startWidth: data.width,
+            startHeight: data.height,
+            keepRatio: (data.type === CanvasNodeType.Image && !data.metadata?.freeResize) || data.type === CanvasNodeType.Video || Boolean(definition?.keepAspectRatio?.(data)),
+            ratio: (data.metadata?.naturalWidth || data.width) / (data.metadata?.naturalHeight || data.height || 1),
+        };
+        window.addEventListener("pointermove", handleResizeMove);
+        window.addEventListener("pointerup", handleResizeUp);
+        window.addEventListener("pointercancel", handleResizeUp);
+    };
+
     useEffect(() => {
         return () => {
             window.removeEventListener("mousemove", handleResizeMove);
             window.removeEventListener("mouseup", handleResizeUp);
+            window.removeEventListener("pointermove", handleResizeMove);
+            window.removeEventListener("pointerup", handleResizeUp);
+            window.removeEventListener("pointercancel", handleResizeUp);
         };
     }, [handleResizeMove, handleResizeUp]);
 
@@ -313,6 +344,11 @@ export const CanvasNode = React.memo(function CanvasNode({
             }}
             onMouseDownCapture={(event) => {
                 if (!referenceSelectionState) onSelectCapture?.(event, data.id);
+            }}
+            onPointerDownCapture={(event) => {
+                if (event.pointerType === "touch" && !referenceSelectionState) {
+                    onSelectCapture?.(event as any, data.id);
+                }
             }}
             onContextMenu={(event) => {
                 if (referenceSelectionState) event.preventDefault();
@@ -368,6 +404,15 @@ export const CanvasNode = React.memo(function CanvasNode({
                     else if (event.button === 0 && referenceSelectionState === "available") {
                         event.stopPropagation();
                         onSelectReference?.(data.id);
+                    }
+                }}
+                onPointerDown={(event) => {
+                    if (event.pointerType === "touch") {
+                        if (!referenceSelectionState) onMouseDown(event as any, data.id);
+                        else if (referenceSelectionState === "available") {
+                            event.stopPropagation();
+                            onSelectReference?.(data.id);
+                        }
                     }
                 }}
                 onDoubleClick={(event) => {
@@ -433,16 +478,38 @@ export const CanvasNode = React.memo(function CanvasNode({
                     </div>
                 ) : null}
 
-                {!referenceSelectionState ? <ResizeHandle corner="top-left" onMouseDown={handleResizeMouseDown} /> : null}
-                {!referenceSelectionState ? <ResizeHandle corner="top-right" onMouseDown={handleResizeMouseDown} /> : null}
-                {!referenceSelectionState ? <ResizeHandle corner="bottom-left" onMouseDown={handleResizeMouseDown} /> : null}
-                {!referenceSelectionState ? <ResizeHandle corner="bottom-right" onMouseDown={handleResizeMouseDown} /> : null}
+                {!referenceSelectionState ? <ResizeHandle corner="top-left" onMouseDown={handleResizeMouseDown} onPointerDown={handleResizePointerDown} /> : null}
+                {!referenceSelectionState ? <ResizeHandle corner="top-right" onMouseDown={handleResizeMouseDown} onPointerDown={handleResizePointerDown} /> : null}
+                {!referenceSelectionState ? <ResizeHandle corner="bottom-left" onMouseDown={handleResizeMouseDown} onPointerDown={handleResizePointerDown} /> : null}
+                {!referenceSelectionState ? <ResizeHandle corner="bottom-right" onMouseDown={handleResizeMouseDown} onPointerDown={handleResizePointerDown} /> : null}
             </div>
 
-            {!referenceSelectionState && !isGroup ? <ConnectionHandleDot side="left" visible={hovered || isSelected || isConnecting} onMouseDown={(event) => onConnectStart(event, data.id, "target")} /> : null}
-            {!referenceSelectionState && (definition?.hasSourceHandle ?? true) && data.type !== CanvasNodeType.Config ? <ConnectionHandleDot side="right" visible={hovered || isSelected || isConnecting} onMouseDown={(event) => onConnectStart(event, data.id, "source")} /> : null}
+            {!referenceSelectionState && !isGroup ? (
+                <ConnectionHandleDot
+                    side="left"
+                    visible={hovered || isSelected || isConnecting}
+                    onMouseDown={(event) => onConnectStart(event, data.id, "target")}
+                    onPointerDown={(event) => {
+                        if (event.pointerType === "touch") onConnectStart(event as any, data.id, "target");
+                    }}
+                />
+            ) : null}
+            {!referenceSelectionState && (definition?.hasSourceHandle ?? true) && data.type !== CanvasNodeType.Config ? (
+                <ConnectionHandleDot
+                    side="right"
+                    visible={hovered || isSelected || isConnecting}
+                    onMouseDown={(event) => onConnectStart(event, data.id, "source")}
+                    onPointerDown={(event) => {
+                        if (event.pointerType === "touch") onConnectStart(event as any, data.id, "source");
+                    }}
+                />
+            ) : null}
 
-            {showPanel && !isGroup && renderPanel ? <div className="absolute left-1/2 top-full z-[70] w-[600px] -translate-x-1/2 pt-4">{renderPanel(data)}</div> : null}
+            {showPanel && !isGroup && renderPanel ? (
+                <div className="absolute left-1/2 top-full z-[70] w-[min(600px,calc(100vw-32px))] max-w-[94vw] -translate-x-1/2 pt-4">
+                    {renderPanel(data)}
+                </div>
+            ) : null}
         </div>
     );
 });
@@ -933,28 +1000,55 @@ function BatchFrame({ batchCount, batchExpanded, children }: { batchCount: numbe
         </div>
     );
 }
-function ResizeHandle({ corner, onMouseDown }: { corner: ResizeCorner; onMouseDown: (event: React.MouseEvent, corner: ResizeCorner) => void }) {
+function ResizeHandle({
+    corner,
+    onMouseDown,
+    onPointerDown,
+}: {
+    corner: ResizeCorner;
+    onMouseDown: (event: React.MouseEvent, corner: ResizeCorner) => void;
+    onPointerDown?: (event: React.PointerEvent, corner: ResizeCorner) => void;
+}) {
     const positionClass = {
-        "top-left": "-left-[14px] -top-[14px] cursor-nwse-resize",
-        "top-right": "-right-[14px] -top-[14px] cursor-nesw-resize",
-        "bottom-left": "-bottom-[14px] -left-[14px] cursor-nesw-resize",
-        "bottom-right": "-bottom-[14px] -right-[14px] cursor-nwse-resize",
+        "top-left": "-left-[18px] sm:-left-[14px] -top-[18px] sm:-top-[14px] cursor-nwse-resize",
+        "top-right": "-right-[18px] sm:-right-[14px] -top-[18px] sm:-top-[14px] cursor-nesw-resize",
+        "bottom-left": "-bottom-[18px] sm:-bottom-[14px] -left-[18px] sm:-left-[14px] cursor-nesw-resize",
+        "bottom-right": "-bottom-[18px] sm:-bottom-[14px] -right-[18px] sm:-right-[14px] cursor-nwse-resize",
     }[corner];
 
-    return <div className={`absolute z-50 size-7 ${positionClass}`} onMouseDown={(event) => onMouseDown(event, corner)} />;
+    return (
+        <div
+            className={`absolute z-50 size-9 sm:size-7 ${positionClass} flex items-center justify-center touch-none`}
+            onMouseDown={(event) => onMouseDown(event, corner)}
+            onPointerDown={(event) => onPointerDown?.(event, corner)}
+        >
+            <div className="size-2 sm:size-1.5 rounded-full border border-blue-500/50 bg-white shadow-xs dark:bg-stone-800" />
+        </div>
+    );
 }
 
-function ConnectionHandleDot({ side, visible, onMouseDown }: { side: "left" | "right"; visible: boolean; onMouseDown: (event: React.MouseEvent) => void }) {
+function ConnectionHandleDot({
+    side,
+    visible,
+    onMouseDown,
+    onPointerDown,
+}: {
+    side: "left" | "right";
+    visible: boolean;
+    onMouseDown: (event: React.MouseEvent) => void;
+    onPointerDown?: (event: React.PointerEvent) => void;
+}) {
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
 
     return (
         <div
-            className={`absolute top-1/2 z-30 flex size-12 -translate-y-1/2 cursor-crosshair items-center justify-center transition-opacity duration-150 ${
+            className={`absolute top-1/2 z-30 flex size-12 -translate-y-1/2 cursor-crosshair items-center justify-center transition-opacity duration-150 touch-none ${
                 side === "left" ? "-left-6" : "-right-6"
             } ${visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
             onMouseDown={onMouseDown}
+            onPointerDown={onPointerDown}
         >
-            <div className="size-3 rounded-full border-2 transition-all hover:scale-125" style={{ background: theme.node.panel, borderColor: theme.node.muted }} />
+            <div className="size-3.5 sm:size-3 rounded-full border-2 transition-all hover:scale-125" style={{ background: theme.node.panel, borderColor: theme.node.muted }} />
         </div>
     );
 }

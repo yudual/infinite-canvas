@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Bot, Download, Home, Images, Menu, PanelLeftClose, PanelLeftOpen, Plus, Redo2, Trash2, Undo2, Upload } from "lucide-react";
+import { BookOpen, Bot, Download, Home, Images, Megaphone, Menu, PanelLeftClose, PanelLeftOpen, Plus, Redo2, ShieldCheck, Trash2, Undo2, Upload } from "lucide-react";
 import { Button, Dropdown, Modal, Tooltip } from "antd";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { UserStatusActions } from "@/components/layout/user-status-actions";
 import { canvasThemes } from "@/lib/canvas-theme";
 import { useCanvasSidePanelStore } from "@/stores/use-canvas-side-panel-store";
 import { useThemeStore } from "@/stores/use-theme-store";
+import { useNoticeStore } from "@/stores/use-notice-store";
+import { useUserStore } from "@/stores/use-user-store";
 import { DOCS_URL } from "@/constant/env";
 
 export function CanvasTopBar({
@@ -59,6 +62,11 @@ export function CanvasTopBar({
     const theme = canvasThemes[colorTheme];
     const titleRef = useRef<HTMLDivElement>(null);
     const [shortcutsOpen, setShortcutsOpen] = useState(false);
+    const navigate = useNavigate();
+    const user = useUserStore((state) => state.user);
+    const openNotice = useNoticeStore((state) => state.openNotice);
+    const notice = useNoticeStore((state) => state.notice);
+    const hasCheckedToday = useNoticeStore((state) => state.hasCheckedToday);
     const sidePanelOpen = useCanvasSidePanelStore((state) => state.panelOpen);
     const toggleSidePanel = useCanvasSidePanelStore((state) => state.togglePanel);
 
@@ -91,8 +99,33 @@ export function CanvasTopBar({
                         menu={{
                             items: [
                                 { key: "home", icon: <Home className="size-4" />, label: t("canvas.home"), onClick: onHome },
-                                { key: "docs", icon: <BookOpen className="size-4" />, label: t("canvas.docs"), onClick: () => window.open(DOCS_URL, "_blank", "noopener,noreferrer") },
                                 { key: "projects", icon: <Images className="size-4" />, label: t("canvas.projects"), onClick: onProjects },
+                                ...(notice?.enabled !== false
+                                    ? [
+                                          {
+                                              key: "notice",
+                                              icon: <Megaphone className="size-4 text-amber-500" />,
+                                              label: (
+                                                  <span className="flex items-center justify-between gap-3">
+                                                      <span>系统公告</span>
+                                                      {!hasCheckedToday ? <span className="size-2 rounded-full bg-amber-500 animate-pulse" /> : null}
+                                                  </span>
+                                              ),
+                                              onClick: openNotice,
+                                          },
+                                      ]
+                                    : []),
+                                ...(user?.role === "admin"
+                                    ? [
+                                          {
+                                              key: "admin",
+                                              icon: <ShieldCheck className="size-4 text-purple-500" />,
+                                              label: "管理后台",
+                                              onClick: () => navigate("/admin"),
+                                          },
+                                      ]
+                                    : []),
+                                { key: "docs", icon: <BookOpen className="size-4" />, label: t("canvas.docs"), onClick: () => window.open(DOCS_URL, "_blank", "noopener,noreferrer") },
                                 { type: "divider" },
                                 { key: "new", icon: <Plus className="size-4" />, label: t("canvas.create"), onClick: onCreateProject },
                                 { key: "delete", danger: true, icon: <Trash2 className="size-4" />, label: t("canvas.deleteCurrent"), onClick: onDeleteProject },
@@ -121,13 +154,13 @@ export function CanvasTopBar({
                                     if (event.key === "Enter") onFinishTitleEditing();
                                     if (event.key === "Escape") onCancelTitleEditing();
                                 }}
-                                className="max-w-[110px] sm:max-w-[280px] bg-transparent p-0 text-left text-sm sm:text-lg font-semibold tracking-normal outline-none"
+                                className="max-w-[85px] min-[380px]:max-w-[120px] sm:max-w-[280px] bg-transparent p-0 text-left text-sm sm:text-lg font-semibold tracking-normal outline-none"
                                 style={{ color: theme.node.text }}
                             />
                         ) : (
                             <button
                                 type="button"
-                                className="max-w-[110px] sm:max-w-[280px] truncate border-b border-dashed border-transparent text-left text-sm sm:text-lg font-semibold tracking-normal transition hover:border-current"
+                                className="max-w-[85px] min-[380px]:max-w-[120px] sm:max-w-[280px] truncate border-b border-dashed border-transparent text-left text-sm sm:text-lg font-semibold tracking-normal transition hover:border-current"
                                 onDoubleClick={onStartTitleEditing}
                                 title={t("canvas.renameHint")}
                             >

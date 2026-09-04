@@ -80,7 +80,7 @@ export function UserProfileDropdown({ onOpenProjects }: UserProfileDropdownProps
         <Dropdown menu={{ items }} placement="bottomRight" trigger={["click"]}>
             <button
                 type="button"
-                className="inline-flex h-8 items-center gap-2 rounded-full px-2 text-stone-700 transition hover:bg-black/5 dark:text-stone-200 dark:hover:bg-white/10"
+                className="inline-flex h-8 items-center gap-2 rounded-full p-1 sm:px-2 text-stone-700 transition hover:bg-black/5 dark:text-stone-200 dark:hover:bg-white/10"
                 aria-label="User Profile"
             >
                 <Avatar

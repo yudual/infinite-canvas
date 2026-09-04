@@ -65,6 +65,7 @@ export default function AdminPage() {
                     stats={stats}
                     loading={statsLoading}
                     onRefresh={loadStats}
+                    onSwitchTab={setActiveTab}
                 />
             ),
         },
