@@ -155,6 +155,7 @@ export default function AdminPage() {
         },
     ];
 
+
     return (
         <div
             className="flex h-screen flex-col overflow-hidden"
@@ -218,6 +219,10 @@ export default function AdminPage() {
                                 欢迎管理员 {currentUser?.displayName || currentUser?.username || "Admin"}，在此管理模型渠道池、素材与工程运维、查看调用审计与系统状态。
                             </Paragraph>
                         </div>
+                        <div className="hidden items-center gap-2 text-xs text-secondary-foreground md:flex">
+                            <span className="size-2 rounded-full bg-emerald-500" />
+                            管理服务正常
+                        </div>
                     </div>
 
                     <Tabs
@@ -225,6 +230,8 @@ export default function AdminPage() {
                         onChange={setActiveTab}
                         items={tabItems}
                         size="large"
+                        tabBarGutter={20}
+                        className="admin-tabs"
                     />
                 </div>
             </main>

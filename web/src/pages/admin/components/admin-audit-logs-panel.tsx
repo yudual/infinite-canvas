@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Table, Button, Tag, Space, Typography, message, Input, Select, Drawer, Descriptions } from "antd";
+import { Table, Button, Tag, Space, Typography, message, Input, Select, Drawer, Descriptions, Card, Statistic } from "antd";
 import { RotateCw, Eye, AlertCircle, CheckCircle, Clock } from "lucide-react";
 import type { AdminAuditLogItem } from "@/services/api/admin";
 import { getAdminAuditLogs } from "@/services/api/admin";
@@ -158,6 +158,12 @@ export function AdminAuditLogsPanel() {
 
     return (
         <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <Card size="small"><Statistic title="当前筛选记录" value={total} valueStyle={{ fontSize: 22 }} /></Card>
+                <Card size="small"><Statistic title="本页成功" value={logs.filter((log) => log.status === "success").length} valueStyle={{ fontSize: 22, color: "#16a34a" }} /></Card>
+                <Card size="small"><Statistic title="本页失败" value={logs.filter((log) => log.status !== "success").length} valueStyle={{ fontSize: 22, color: "#dc2626" }} /></Card>
+                <Card size="small"><Statistic title="本页平均耗时" value={logs.length ? Math.round(logs.reduce((sum, log) => sum + log.durationMs, 0) / logs.length) : 0} suffix="ms" valueStyle={{ fontSize: 22 }} /></Card>
+            </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
                     <Select

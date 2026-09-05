@@ -7,6 +7,12 @@ description: Implemented changes that still need manual verification
 
 The current release needs manual verification in these areas:
 
+- 后台用户与审计体验：用户管理表格可通过「详情」抽屉查看完整信息；调用审计页在筛选后应显示记录总数、本页成功/失败数量与平均耗时，窄屏下摘要卡片不应溢出。
+
+- 后台管理界面信息层级：访问 `/admin` 时顶部导航、管理服务状态与各功能标签在桌面和窄屏下应保持清晰；公告配置页应以紧凑提示展示发布规则，编辑后出现「有未保存修改」和「发布公告更新」，保存/重置成功后恢复正常状态。
+
+- 可靠性与生产配置：管理后台概览在统计接口返回前应正常显示；素材上传在数据库写入失败后不应留下孤立文件；生产环境未配置 `JWT_SECRET` 时服务应明确启动失败，配置自定义密钥后应正常启动。
+
 - 前端工作台与服务端渠道池自动同步 (Workbench Channel & Model Auto-Sync)：前端各工作台（/image 生图工作台、/video 视频工作台及无限画布各 Prompt/Config 节点）在应用挂载、登录状态切换及打开模型选择器（ModelPicker）时，自动同步拉取服务端已激活的多渠道及其全部模型（GET /api/ai/models），自动归入「云端服务池」并精准识别能力分类；生图与修图直接通过服务端 /api/ai/* 安全代理执行，实现后台添加渠道与前端工作台的无缝实时互通。
 - AI 调用审计与排查日志 (Request & Audit Logs)：服务端全量拦截生图、修图与对话请求并持久化至 SQLite（ai_audit_logs），记录用户标识、请求类型、目标模型、命中渠道、响应耗时、状态码及详细错误信息；提供自动 Zero Base64 Bleed 图像摘要与敏感密钥脱敏，避免数据膨胀与凭据泄露；管理员可通过 /api/admin/audit-logs 检索过滤并查看单项日志诊断详情。
 - 多渠道 AI 服务池与智能容灾路由 (Multi-Channel Provider Pool & Routing)：管理员可在后台维护多个独立 AI 渠道并配置优先级/权重/模型绑定；AI 代理调度器根据目标模型自动从多渠道池中匹配可用渠道，当某渠道调用失败（429、5xx、超时等）时自动触发同模型备用渠道故障转移重试（Failover），所有请求、响应及错误信息严格脱敏 API Key 保障零凭据泄露。

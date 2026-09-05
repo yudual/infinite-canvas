@@ -172,6 +172,7 @@ export function AdminNoticePanel() {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [hasDraftChanges, setHasDraftChanges] = useState(false);
     const [realModalOpen, setRealModalOpen] = useState(false);
     const [previewNotice, setPreviewNotice] = useState<Partial<SystemNoticeConfig>>({});
     const fetchPublicNotice = useNoticeStore((state) => state.fetchNotice);
@@ -183,6 +184,7 @@ export function AdminNoticePanel() {
             if (res.success && res.notice) {
                 form.setFieldsValue(res.notice);
                 setPreviewNotice(res.notice);
+                setHasDraftChanges(false);
             }
         } catch (err: any) {
             message.error(err.message || "加载公告配置失败");
@@ -197,9 +199,11 @@ export function AdminNoticePanel() {
 
     const handleValuesChange = (_changed: any, allValues: any) => {
         setPreviewNotice({ ...allValues, updatedAt: previewNotice.updatedAt });
+        setHasDraftChanges(true);
     };
 
     const syncPreviewFromForm = () => {
+        setHasDraftChanges(true);
         setTimeout(() => {
             const vals = form.getFieldsValue(true);
             setPreviewNotice({ ...vals, updatedAt: previewNotice.updatedAt });
@@ -214,6 +218,7 @@ export function AdminNoticePanel() {
             if (res.success) {
                 message.success(res.message || "系统公告保存成功，所有用户端已即刻生效");
                 setPreviewNotice(res.notice);
+                setHasDraftChanges(false);
                 void fetchPublicNotice();
             }
         } catch (err: any) {
@@ -229,6 +234,7 @@ export function AdminNoticePanel() {
         if (!tpl) return;
         form.setFieldsValue(tpl.data);
         setPreviewNotice({ ...tpl.data, updatedAt: previewNotice.updatedAt });
+        setHasDraftChanges(true);
         message.info(`已填入「${tpl.label}」，确认无误后点击「保存公告配置」即可发布`);
     };
 
@@ -246,6 +252,7 @@ export function AdminNoticePanel() {
                     if (res.success && res.notice) {
                         form.setFieldsValue(res.notice);
                         setPreviewNotice(res.notice);
+                        setHasDraftChanges(false);
                         message.success("已恢复为初始默认公告配置并同步云端");
                         void fetchPublicNotice();
                     }
@@ -314,22 +321,27 @@ export function AdminNoticePanel() {
                         loading={saving}
                         onClick={handleSave}
                     >
-                        保存公告配置
+                        {hasDraftChanges ? "发布公告更新" : "保存公告配置"}
                     </Button>
                 </div>
             </div>
 
-            <Alert
-                type="info"
-                showIcon
-                className="text-xs"
-                message="关于后台公告自主设置与下发机制"
-                description={
-                    <span>
-                        管理员在此随时自主编辑并保存后，配置将即刻写入数据库并向全站用户端同步。保存操作会自动更新公告版本时间戳（当前版本：{previewNotice.updatedAt ? new Date(previewNotice.updatedAt).toLocaleString() : "未发布"}）。<strong>即使普通用户此前勾选过「今日不再弹出」，一旦管理员更新发布了新公告，全站用户端也会重新主动弹出最新公告</strong>，确保重要通知必达。
+            <div className="flex flex-col gap-2 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 font-medium">
+                        <Info className="size-4 text-blue-500" />
+                        公告保存后会立即同步到用户端
+                        {hasDraftChanges && <Tag color="gold" className="!m-0">有未保存修改</Tag>}
+                    </div>
+                    <span className="text-xs text-secondary-foreground">
+                        最近发布：{previewNotice.updatedAt ? new Date(previewNotice.updatedAt).toLocaleString() : "未发布"}
                     </span>
-                }
-            />
+                </div>
+                <details className="text-xs text-secondary-foreground">
+                    <summary className="cursor-pointer select-none">查看发布规则</summary>
+                    <p className="mb-0 mt-2 leading-5">发布新版本后，即使用户此前选择了「今日不再弹出」，也会重新收到最新公告；关闭公告后，前台不会主动弹出。</p>
+                </details>
+            </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 {/* Form Section */}

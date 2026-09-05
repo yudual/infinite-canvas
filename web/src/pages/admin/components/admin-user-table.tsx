@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Table, Input, Button, Tag, Space, Popconfirm, Modal, Form, Tooltip } from "antd";
+import { Table, Input, Button, Tag, Space, Popconfirm, Modal, Form, Tooltip, Drawer, Descriptions } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { Search, UserPlus, RotateCw, KeyRound, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { Search, UserPlus, RotateCw, KeyRound, Trash2, CheckCircle2, XCircle, Eye } from "lucide-react";
 import type { AdminUserItem, CreateUserPayload } from "@/services/api/admin";
 import { AdminUserModal } from "./admin-user-modal";
 import { useUserStore } from "@/stores/use-user-store";
@@ -41,6 +41,7 @@ export function AdminUserTable({
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [resetTargetUser, setResetTargetUser] = useState<AdminUserItem | null>(null);
     const [resetSubmitting, setResetSubmitting] = useState(false);
+    const [detailUser, setDetailUser] = useState<AdminUserItem | null>(null);
     const [resetForm] = Form.useForm();
 
     const handleConfirmReset = async () => {
@@ -124,6 +125,9 @@ export function AdminUserTable({
 
                 return (
                     <Space size="small">
+                        <Button type="link" size="small" icon={<Eye className="size-3.5" />} onClick={() => setDetailUser(record)}>
+                            详情
+                        </Button>
                         <Popconfirm
                             title={record.status === "active" ? "确认禁用此账号？" : "确认重新启用此账号？"}
                             description={
@@ -225,6 +229,25 @@ export function AdminUserTable({
                 size="middle"
                 scroll={{ x: "max-content" }}
             />
+
+            <Drawer
+                title="用户详情"
+                open={Boolean(detailUser)}
+                onClose={() => setDetailUser(null)}
+                width={360}
+                destroyOnClose
+            >
+                {detailUser && (
+                    <Descriptions column={1} size="small" bordered>
+                        <Descriptions.Item label="用户名">{detailUser.username}</Descriptions.Item>
+                        <Descriptions.Item label="显示名称">{detailUser.displayName || "未设置"}</Descriptions.Item>
+                        <Descriptions.Item label="角色">{detailUser.role === "admin" ? "管理员" : "普通用户"}</Descriptions.Item>
+                        <Descriptions.Item label="状态">{detailUser.status === "active" ? "正常" : "已禁用"}</Descriptions.Item>
+                        <Descriptions.Item label="注册时间">{detailUser.createdAt ? new Date(detailUser.createdAt).toLocaleString("zh-CN") : "-"}</Descriptions.Item>
+                        <Descriptions.Item label="用户 ID"><span className="break-all font-mono text-xs">{detailUser.id}</span></Descriptions.Item>
+                    </Descriptions>
+                )}
+            </Drawer>
 
             <AdminUserModal
                 open={createModalOpen}

@@ -40,7 +40,7 @@ export function AdminOverviewCard({ stats, loading, onRefresh, onSwitchTab }: Ad
         },
         {
             title: "素材存储空间",
-            value: formatBytes(stats?.storageBytes),
+            value: formatBytes(stats?.storageBytes ?? 0),
             icon: <HardDrive className="size-5 text-stone-500 dark:text-stone-400" />,
             isCustomValue: true,
         },

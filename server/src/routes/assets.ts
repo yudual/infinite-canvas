@@ -71,6 +71,14 @@ function handleUpload(req: Request, res: Response) {
         ...assetDto, // Flattened compatibility
       });
     } catch (dbErr: any) {
+      // Keep the database and filesystem in sync when metadata persistence fails.
+      try {
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      } catch (cleanupErr) {
+        console.warn("Failed to clean up uploaded asset after DB error:", cleanupErr);
+      }
       console.error("Asset DB insert error:", dbErr);
       return res.status(500).json({
         success: false,
